@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LUCKY抽 App Icon Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f0f0f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      gap: 40px;
+      padding: 40px;
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .icon-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .icon {
+      width: 1024px;
+      height: 1024px;
+      background: linear-gradient(145deg, #9B2C1F, #8C1D18, #6F1612);
+      border-radius: 224px; /* iOS icon radius ratio */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .icon::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 224px 224px 0 0;
+    }
+    .horse-circle {
+      width: 420px;
+      height: 420px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 12px solid #E6B65C;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+    .horse {
+      font-size: 220px;
+      line-height: 1;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    }
+    .horse-img {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+    }
+    .icon-small .horse-img {
+      width: 36px;
+      height: 36px;
+    }
+    .icon-medium .horse-img {
+      width: 100px;
+      height: 100px;
+    }
+    .app-name {
+      font-size: 160px;
+      font-weight: 800;
+      color: #FAF6EE;
+      text-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      letter-spacing: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Preview sizes */
+    .preview-row {
+      display: flex;
+      gap: 30px;
+      align-items: flex-end;
+    }
+    .icon-small {
+      width: 180px;
+      height: 180px;
+      border-radius: 40px;
+    }
+    .icon-small .horse-circle {
+      width: 74px;
+      height: 74px;
+      border-width: 3px;
+      margin-bottom: 8px;
+    }
+    .icon-small .horse {
+      font-size: 38px;
+    }
+    .icon-small .app-name {
+      font-size: 28px;
+      letter-spacing: 3px;
+    }
+
+    .icon-medium {
+      width: 512px;
+      height: 512px;
+      border-radius: 112px;
+    }
+    .icon-medium .horse-circle {
+      width: 210px;
+      height: 210px;
+      border-width: 6px;
+      margin-bottom: 20px;
+    }
+    .icon-medium .horse {
+      font-size: 110px;
+    }
+    .icon-medium .app-name {
+      font-size: 80px;
+      letter-spacing: 10px;
+    }
+
+    .size-label {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .instructions {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 600px;
+      text-align: center;
+    }
+    .instructions h3 {
+      margin-bottom: 15px;
+      color: #8C1D18;
+    }
+    .instructions ol {
+      text-align: left;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin: 10px 0;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h2>LUCKY抽 App Icon 預覽</h2>
+
+  <div class="preview-row">
+    <div class="icon-container">
+      <div class="icon icon-small">
+        <div class="horse-circle">
+          <img class="horse-img" src="https://em-content.zobj.net/source/apple/391/horse-face_1f434.png" alt="horse">
+        </div>
+        <span class="app-name">LUCKY抽</span>
+      </div>
+      <span class="size-label">180 x 180 (3x)</span>
+    </div>
+
+    <div class="icon-container">
+      <div class="icon icon-medium">
+        <div class="horse-circle">
+          <img class="horse-img" src="https://em-content.zobj.net/source/apple/391/horse-face_1f434.png" alt="horse">
+        </div>
+        <span class="app-name">LUCKY抽</span>
+      </div>
+      <span class="size-label">512 x 512</span>
+    </div>
+  </div>
+
+  <div class="icon-container">
+    <div class="icon">
+      <div class="horse-circle">
+        <img class="horse-img" src="https://em-content.zobj.net/source/apple/391/horse-face_1f434.png" alt="horse">
+      </div>
+      <span class="app-name">LUCKY抽</span>
+    </div>
+    <span class="size-label">1024 x 1024 (App Store)</span>
+  </div>
+
+  <div class="instructions">
+    <h3>如何儲存為圖示</h3>
+    <ol>
+      <li>在上方 1024x1024 的大圖示上<strong>按右鍵</strong></li>
+      <li>選擇「<strong>檢查</strong>」或按 F12 開啟開發者工具</li>
+      <li>或使用截圖工具截取 1024x1024 的圖示</li>
+      <li>推薦使用 <a href="https://www.screentogif.com/" target="_blank">ShareX</a> 或 Windows 內建截圖 (Win+Shift+S)</li>
+      <li>儲存為 <strong>icon.png</strong> 放到 assets 資料夾</li>
+    </ol>
+  </div>
+</body>
+</html>
