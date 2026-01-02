@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo start)",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(npx expo start:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill /PID 28184 /F)",
+      "Bash(cmd.exe /c \"taskkill /PID 28184 /F\")",
+      "Bash(powershell -Command \"Stop-Process -Id 28184 -Force\")",
+      "Bash(npx expo install:*)",
+      "Bash(npx eas-cli:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\hhsun\\\\Projects\\\\qman-roulette-app\\\\assets\\\\icon-preview.html\")",
+      "Bash(start \"\" \"C:\\\\Users\\\\hhsun\\\\Projects\\\\qman-roulette-app\\\\privacy-policy.html\")",
+      "Bash(git remote set-url:*)",
+      "Bash(dir:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: LUCKY抽 - 抽獎輪盤與戳戳樂 App\n\nFeatures:\n- 輪盤抽獎功能\n- 戳戳樂遊戲\n- 三種主題配色（喜氣、粉春、清新）\n- 支援相片匯入作為抽獎選項\n- 本地儲存設定\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\hhsun\\\\Projects\\\\qman-roulette-app\\\\assets\\\\screenshots-preview.html\")",
+      "Bash(cd:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(taskkill:*)",
+      "Bash(git fetch:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "WebSearch",
+      "Bash(timeout /t 15 /nobreak)"
+    ]
+  }
+}

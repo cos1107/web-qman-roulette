@@ -6,22 +6,97 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
+  Alert as RNAlert,
   Animated,
   Easing,
   Modal,
   Image,
   Dimensions,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
-import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
+
+// Cross-platform Alert for Web compatibility
+const Alert = {
+  alert: (title: string, message?: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}${message ? '\n\n' + message : ''}`);
+    } else {
+      RNAlert.alert(title, message);
+    }
+  }
+};
+import Svg, { Path, Circle, G, Text as SvgText, Ellipse, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Traditional-style cute horse icon (年畫風格小馬)
+function HorseIcon({ size = 80 }: { size?: number }) {
+  const scale = size / 100;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      <G transform={`scale(${1})`}>
+        {/* Body - cream colored */}
+        <Ellipse cx="50" cy="58" rx="28" ry="22" fill="#F5E6D3" />
+        {/* Belly highlight */}
+        <Ellipse cx="50" cy="62" rx="20" ry="14" fill="#FFF8F0" />
+
+        {/* Back legs */}
+        <Path d="M35 72 L32 90 Q32 94 36 94 L40 94 Q44 94 44 90 L41 72" fill="#F5E6D3" />
+        <Path d="M59 72 L56 90 Q56 94 60 94 L64 94 Q68 94 68 90 L65 72" fill="#F5E6D3" />
+        {/* Hooves */}
+        <Rect x="32" y="90" width="12" height="6" rx="2" fill="#D4A574" />
+        <Rect x="56" y="90" width="12" height="6" rx="2" fill="#D4A574" />
+
+        {/* Saddle/blanket - red with pattern */}
+        <Path d="M30 50 Q50 42 70 50 L68 65 Q50 58 32 65 Z" fill="#E85A4F" />
+        <Path d="M35 52 Q50 46 65 52 L64 60 Q50 55 36 60 Z" fill="#C94A3F" />
+        {/* Saddle decoration dots */}
+        <Circle cx="42" cy="55" r="2" fill="#FFD700" />
+        <Circle cx="50" cy="53" r="2" fill="#FFD700" />
+        <Circle cx="58" cy="55" r="2" fill="#FFD700" />
+
+        {/* Neck */}
+        <Path d="M65 48 Q72 35 68 22 Q65 18 58 20 Q52 25 55 45" fill="#F5E6D3" />
+
+        {/* Head */}
+        <Ellipse cx="62" cy="20" rx="14" ry="12" fill="#F5E6D3" />
+        {/* Face highlight */}
+        <Ellipse cx="60" cy="22" rx="8" ry="7" fill="#FFF8F0" />
+
+        {/* Ear */}
+        <Path d="M68 8 Q72 4 74 10 Q72 14 68 12 Z" fill="#F5E6D3" />
+        <Path d="M70 9 Q72 7 73 10 Q72 12 70 11 Z" fill="#FFB6A3" />
+
+        {/* Eye */}
+        <Circle cx="58" cy="18" r="3" fill="#4A3728" />
+        <Circle cx="57" cy="17" r="1" fill="#FFFFFF" />
+
+        {/* Nostril */}
+        <Circle cx="52" cy="24" r="1.5" fill="#D4A574" />
+
+        {/* Mane - flowing red/orange */}
+        <Path d="M68 12 Q78 15 75 25 Q72 22 68 24" fill="#E85A4F" />
+        <Path d="M66 14 Q74 20 70 30 Q67 26 65 28" fill="#C94A3F" />
+        <Path d="M64 18 Q70 28 65 38 Q62 32 60 35" fill="#E85A4F" />
+
+        {/* Tail - flowing */}
+        <Path d="M22 55 Q10 50 8 60 Q6 70 15 75 Q20 70 22 65" fill="#E85A4F" />
+        <Path d="M22 58 Q14 55 12 62 Q10 68 18 72 Q20 68 22 65" fill="#C94A3F" />
+
+        {/* Ribbon on neck */}
+        <Path d="M58 35 Q62 33 66 35 Q64 40 60 38 Q56 40 54 35 Q56 33 58 35" fill="#E85A4F" />
+        <Circle cx="60" cy="36" r="3" fill="#FFD700" />
+      </G>
+    </Svg>
+  );
+}
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
 // ============ TYPES ============
 type ScreenName = 'Home' | 'Setup' | 'Spin' | 'PokeSetup' | 'PokeGame';
-type ThemeId = 'emerald' | 'classic' | 'fresh';
+type ThemeId = 'classic' | 'pink' | 'fresh';
 type GameMode = 'wheel' | 'poke';
 
 interface Option {
@@ -114,8 +189,8 @@ interface PokedCell {
 
 // ============ CONSTANTS ============
 const THEMES: Record<ThemeId, Theme> = {
-  emerald: {
-    id: 'emerald',
+  classic: {
+    id: 'classic',
     name: '喜氣',
     palette: ['#9B2C1F', '#6F1612', '#E6B65C', '#FAF6EE'],
     bg: '#8C1D18',
@@ -127,8 +202,8 @@ const THEMES: Record<ThemeId, Theme> = {
     buttonBg: '#E6B65C',
     buttonText: '#8C1D18',
   },
-  classic: {
-    id: 'classic',
+  pink: {
+    id: 'pink',
     name: '粉春',
     palette: ['#FADADD', '#F38CA3', '#FFF6F7', '#B7D7C2'],
     bg: '#FFF1F3',
@@ -166,7 +241,7 @@ const DEFAULT_CONFIG: WheelConfig = {
   name: 'LUCKY抽 • 輪盤',
   customGreeting: '',
   options: [],
-  themeId: 'emerald',
+  themeId: 'classic',
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -176,7 +251,7 @@ const DEFAULT_POKE_CONFIG: PokeConfig = {
   name: 'LUCKY抽 • 戳戳樂',
   customGreeting: '',
   options: [],
-  themeId: 'emerald',
+  themeId: 'classic',
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -253,6 +328,7 @@ interface WheelProps {
   theme: Theme;
   isSpinning: boolean;
   onSpinEnd?: (finalRotation: number) => void;
+  size?: number; // Dynamic size for responsive design
 }
 
 // Helper function to create pie slice path
@@ -270,9 +346,14 @@ function createPieSlice(cx: number, cy: number, radius: number, startAngle: numb
   return `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 }
 
-function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
+function Wheel({ options, palette, theme, isSpinning, onSpinEnd, size: propSize }: WheelProps) {
   const rotationAnim = React.useRef(new Animated.Value(0)).current;
   const currentRotation = React.useRef(0);
+
+  // Use dynamic size or default
+  const wheelSize = propSize || SIZE;
+  const wheelCenter = wheelSize / 2;
+  const wheelRadius = wheelSize / 2 - 3;
 
   useEffect(() => {
     if (isSpinning) {
@@ -284,7 +365,7 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
         toValue: targetRotation,
         duration: 5000,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start(() => {
         currentRotation.current = targetRotation;
         onSpinEnd?.(targetRotation);
@@ -297,6 +378,9 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
     outputRange: ['0deg', '360deg'],
   });
 
+  // Scale factor for responsive sizing
+  const scale = wheelSize / SIZE;
+
   // Build color map by option index for consistency with setup list
   const sectorAngle = 360 / TOTAL_SECTORS;
   const sectors = Array.from({ length: TOTAL_SECTORS }, (_, i) => {
@@ -308,23 +392,24 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
     const endAngle = startAngle + sectorAngle;
     const midAngle = startAngle + sectorAngle / 2;
     // Different radius for text vs images - images closer to edge
-    const textRadius = RADIUS * 0.58;
-    const imageRadius = RADIUS * 0.76;
+    const textRadius = wheelRadius * 0.58;
+    const imageRadius = wheelRadius * 0.76;
     const contentAngleRad = (midAngle - 90) * Math.PI / 180;
-    const textX = CENTER + textRadius * Math.cos(contentAngleRad);
-    const textY = CENTER + textRadius * Math.sin(contentAngleRad);
-    const imageX = CENTER + imageRadius * Math.cos(contentAngleRad);
-    const imageY = CENTER + imageRadius * Math.sin(contentAngleRad);
+    const textX = wheelCenter + textRadius * Math.cos(contentAngleRad);
+    const textY = wheelCenter + textRadius * Math.sin(contentAngleRad);
+    const imageX = wheelCenter + imageRadius * Math.cos(contentAngleRad);
+    const imageY = wheelCenter + imageRadius * Math.sin(contentAngleRad);
     // Text rotation: read from center outward (subtract 90 to align along radius)
     const textRotation = midAngle - 90;
     // Dynamic text: show full text, adjust font size based on length
     const textContent = opt.type === 'text' ? opt.content : '';
     const textLength = textContent.length;
-    // Dynamic font size: 1-2 chars = 20, 3-4 chars = 16, 5+ chars = 13
-    const fontSize = textLength <= 2 ? 20 : textLength <= 4 ? 16 : 13;
+    // Dynamic font size: 1-2 chars = 20, 3-4 chars = 16, 5+ chars = 13, scaled
+    const baseFontSize = textLength <= 2 ? 20 : textLength <= 4 ? 16 : 13;
+    const fontSize = Math.round(baseFontSize * scale);
 
     return {
-      path: createPieSlice(CENTER, CENTER, RADIUS, startAngle, endAngle),
+      path: createPieSlice(wheelCenter, wheelCenter, wheelRadius, startAngle, endAngle),
       fillColor,
       textX,
       textY,
@@ -338,14 +423,16 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
     };
   });
 
-  const CENTER_RADIUS = 38;
+  const CENTER_RADIUS = Math.round(38 * scale);
+  const imageSize = Math.round(60 * scale);
+  const textContainerWidth = Math.round(70 * scale);
 
   return (
     <View style={wheelStyles.container}>
       {/* Rotating Wheel */}
-      <Animated.View style={[wheelStyles.wheelWrapper, { transform: [{ rotate: spin }] }]}>
-        <View style={wheelStyles.wheelBorder}>
-          <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+      <Animated.View style={[wheelStyles.wheelWrapper, { width: wheelSize + 12, height: wheelSize + 12, transform: [{ rotate: spin }] }]}>
+        <View style={[wheelStyles.wheelBorder, { width: wheelSize + 6, height: wheelSize + 6, borderRadius: (wheelSize + 6) / 2 }]}>
+          <Svg width={wheelSize} height={wheelSize} viewBox={`0 0 ${wheelSize} ${wheelSize}`}>
             {/* Pie sectors */}
             {sectors.map((sector, i) => (
               <Path
@@ -367,10 +454,13 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
                 style={[
                   wheelStyles.sectorImage,
                   {
-                    left: sector.imageX - 30,
-                    top: sector.imageY - 30,
-                    borderColor: theme.id === 'emerald' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'classic' ? '#F3A6B1' : '#FFFFFF')),
-                    borderWidth: (theme.id === 'emerald' || theme.id === 'fresh' || theme.id === 'classic') ? 3 : 2,
+                    left: sector.imageX - imageSize / 2,
+                    top: sector.imageY - imageSize / 2,
+                    width: imageSize,
+                    height: imageSize,
+                    borderRadius: imageSize / 2,
+                    borderColor: theme.id === 'classic' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'pink' ? '#F3A6B1' : '#FFFFFF')),
+                    borderWidth: (theme.id === 'classic' || theme.id === 'fresh' || theme.id === 'pink') ? 3 : 2,
                   },
                 ]}
               />
@@ -380,8 +470,9 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
                 style={[
                   wheelStyles.sectorTextContainer,
                   {
-                    left: sector.textX - 35,
+                    left: sector.textX - textContainerWidth / 2,
                     top: sector.textY - 10,
+                    width: textContainerWidth,
                     transform: [{ rotate: `${sector.textRotation}deg` }],
                   },
                 ]}
@@ -401,28 +492,28 @@ function Wheel({ options, palette, theme, isSpinning, onSpinEnd }: WheelProps) {
             cx={CENTER_RADIUS + 20}
             cy={CENTER_RADIUS + 20}
             r={CENTER_RADIUS}
-            fill={theme.id === 'emerald' ? '#FAF6EE' : '#FFFFFF'}
-            stroke={theme.id === 'emerald' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'classic' ? '#F3A6B1' : '#E0E0E0'))}
-            strokeWidth={theme.id === 'emerald' || theme.id === 'fresh' || theme.id === 'classic' ? 2 : 1}
+            fill={theme.id === 'classic' ? '#FAF6EE' : '#FFFFFF'}
+            stroke={theme.id === 'classic' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'pink' ? '#F3A6B1' : '#E0E0E0'))}
+            strokeWidth={theme.id === 'classic' || theme.id === 'fresh' || theme.id === 'pink' ? 2 : 1}
           />
           <Circle
             cx={CENTER_RADIUS + 20}
             cy={CENTER_RADIUS + 20}
             r={CENTER_RADIUS - 4}
-            fill={theme.id === 'emerald' ? '#FAF6EE' : '#FFFFFF'}
-            stroke={theme.id === 'emerald' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'classic' ? '#F3A6B1' : '#E0E0E0'))}
+            fill={theme.id === 'classic' ? '#FAF6EE' : '#FFFFFF'}
+            stroke={theme.id === 'classic' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'pink' ? '#F3A6B1' : '#E0E0E0'))}
             strokeWidth={1}
           />
           {/* Pointer notch extending OUTWARD from center circle at top */}
           <Path
-            d={`M ${CENTER_RADIUS + 20 - 10} ${20 + 2} L ${CENTER_RADIUS + 20} ${20 - 18} L ${CENTER_RADIUS + 20 + 10} ${20 + 2} Z`}
-            fill={theme.id === 'emerald' ? '#FAF6EE' : '#FFFFFF'}
-            stroke={theme.id === 'emerald' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'classic' ? '#F3A6B1' : '#E0E0E0'))}
-            strokeWidth={theme.id === 'emerald' || theme.id === 'fresh' || theme.id === 'classic' ? 2 : 1}
+            d={`M ${CENTER_RADIUS + 20 - 10 * scale} ${20 + 2} L ${CENTER_RADIUS + 20} ${20 - 18 * scale} L ${CENTER_RADIUS + 20 + 10 * scale} ${20 + 2} Z`}
+            fill={theme.id === 'classic' ? '#FAF6EE' : '#FFFFFF'}
+            stroke={theme.id === 'classic' ? '#E6B65C' : (theme.id === 'fresh' ? '#5FB36A' : (theme.id === 'pink' ? '#F3A6B1' : '#E0E0E0'))}
+            strokeWidth={theme.id === 'classic' || theme.id === 'fresh' || theme.id === 'pink' ? 2 : 1}
           />
         </Svg>
-        <View style={wheelStyles.centerTextContainer}>
-          <Text style={[wheelStyles.centerText, { color: theme.id === 'emerald' ? '#8C1D18' : (theme.id === 'fresh' ? '#2F5E3A' : (theme.id === 'classic' ? '#F38CA3' : '#C41E3A')) }]}>抽</Text>
+        <View style={[wheelStyles.centerTextContainer, { width: Math.round(60 * scale), height: Math.round(60 * scale), borderRadius: Math.round(30 * scale) }]}>
+          <Text style={[wheelStyles.centerText, { fontSize: Math.round(26 * scale), color: theme.id === 'classic' ? '#8C1D18' : (theme.id === 'fresh' ? '#2F5E3A' : (theme.id === 'pink' ? '#F38CA3' : '#C41E3A')) }]}>抽</Text>
         </View>
       </View>
     </View>
@@ -505,60 +596,197 @@ interface ResultModalProps {
   againButtonText?: string;
 }
 
+// Firework particle component - larger and more visible
+function FireworkParticle({ delay, startX, startY, color, size = 12 }: { delay: number; startX: number; startY: number; color: string; size?: number }) {
+  const animValue = React.useRef(new Animated.Value(0)).current;
+  const angle = React.useRef(Math.random() * Math.PI * 2).current;
+  const distance = React.useRef(80 + Math.random() * 120).current;
+  const endX = startX + Math.cos(angle) * distance;
+  const endY = startY + Math.sin(angle) * distance;
+
+  React.useEffect(() => {
+    const runAnimation = () => {
+      animValue.setValue(0);
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(animValue, {
+          toValue: 1,
+          duration: 1200 + Math.random() * 600,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ]).start(() => {
+        // Loop the animation
+        setTimeout(runAnimation, Math.random() * 500);
+      });
+    };
+    runAnimation();
+  }, []);
+
+  const translateX = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [startX, endX],
+  });
+  const translateY = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [startY, endY + 50], // More gravity effect
+  });
+  const opacity = animValue.interpolate({
+    inputRange: [0, 0.2, 0.8, 1],
+    outputRange: [0, 1, 0.8, 0],
+  });
+  const scale = animValue.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: [0.3, 1.2, 0.4],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        opacity,
+        transform: [{ translateX }, { translateY }, { scale }],
+        shadowColor: color,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+      }}
+    />
+  );
+}
+
+// Fireworks overlay component - more bursts and continuous animation
+function FireworksOverlay() {
+  const colors = ['#FF4444', '#FFD700', '#FF69B4', '#00FF88', '#44DDFF', '#FF8844', '#DD44FF', '#88FF44'];
+  const { width, height } = useWindowDimensions();
+  const [key, setKey] = React.useState(0);
+
+  // Regenerate particles periodically for continuous effect
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setKey(k => k + 1);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Generate multiple firework bursts - more bursts and particles
+  const bursts = React.useMemo(() => {
+    const result = [];
+    for (let burst = 0; burst < 8; burst++) {
+      const burstX = (width * 0.1) + Math.random() * (width * 0.8);
+      const burstY = (height * 0.05) + Math.random() * (height * 0.5);
+      const burstDelay = burst * 250;
+      const burstColor = colors[burst % colors.length];
+
+      // More particles per burst
+      for (let i = 0; i < 18; i++) {
+        const particleSize = 8 + Math.random() * 10;
+        result.push({
+          id: `${key}-${burst}-${i}`,
+          delay: burstDelay + Math.random() * 150,
+          startX: burstX,
+          startY: burstY,
+          color: burstColor,
+          size: particleSize,
+        });
+      }
+    }
+    return result;
+  }, [width, height, key]);
+
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+      {bursts.map((particle) => (
+        <FireworkParticle
+          key={particle.id}
+          delay={particle.delay}
+          startX={particle.startX}
+          startY={particle.startY}
+          color={particle.color}
+          size={particle.size}
+        />
+      ))}
+    </View>
+  );
+}
+
 function ResultModal({ visible, result, theme, customGreeting, onClose, onSpinAgain, onReset, againButtonText = '再來一次' }: ResultModalProps) {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
   if (!result) return null;
+
   const displayHeader = customGreeting ? `🎊 ${customGreeting} 🎊` : '🎊 恭喜獲獎 🎊';
-  const isClassic = theme.id === 'classic';
-  const isFresh = theme.id === 'fresh';
-  const isEmerald = theme.id === 'emerald';
+  const isClassic = theme.id === 'classic'; // 喜氣
+  const isPink = theme.id === 'pink'; // 粉春
+  const isFresh = theme.id === 'fresh'; // 清新
+
+  // Responsive sizing
+  const isDesktop = Platform.OS === 'web' && windowWidth > 768;
+  const cardMaxWidth = isDesktop ? 500 : windowWidth - 40;
+  const imageSize = isDesktop ? 220 : Math.min(180, windowWidth - 120);
 
   // Theme specific colors
-  const overlayBg = isClassic ? 'rgba(90, 60, 65, 0.55)' : isFresh ? 'rgba(47, 94, 58, 0.45)' : 'rgba(0,0,0,0.9)';
-  const cardBg = isClassic ? '#FADADD' : isFresh ? '#C9D6CC' : theme.palette[0];
-  const cardBorder = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : theme.accent;
-  const headerColor = isClassic ? '#E77B94' : isFresh ? '#2F5E3A' : '#FFFFFF';
-  const resultTextColor = isEmerald ? '#8C1D18' : theme.text;
-  const resultBoxBorder = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : theme.accent;
-  const resultBoxShadow = (isClassic || isFresh) ? {
-    shadowColor: isClassic ? 'rgba(243,140,163,0.25)' : 'rgba(47, 94, 58, 0.2)',
+  const overlayBg = isPink ? 'rgba(90, 60, 65, 0.55)' : isFresh ? 'rgba(47, 94, 58, 0.45)' : 'rgba(0,0,0,0.9)';
+  const cardBg = isPink ? '#FADADD' : isFresh ? '#C9D6CC' : theme.palette[0];
+  const cardBorder = isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : theme.accent;
+  const headerColor = isPink ? '#E77B94' : isFresh ? '#2F5E3A' : '#FFFFFF';
+  const resultTextColor = isClassic ? '#8C1D18' : theme.text;
+  const resultBoxBorder = isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : theme.accent;
+  const resultBoxShadow = (isPink || isFresh) ? {
+    shadowColor: isPink ? 'rgba(243,140,163,0.25)' : 'rgba(47, 94, 58, 0.2)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 4,
   } : {};
-  const primaryBtnBg = isClassic ? '#F38CA3' : isFresh ? '#5FB36A' : theme.accent;
-  const primaryBtnText = isEmerald ? '#8C1D18' : '#FFFFFF';
-  const primaryBtnShadow = (isClassic || isFresh) ? {
-    shadowColor: isClassic ? 'rgba(243,140,163,0.35)' : 'rgba(47, 94, 58, 0.3)',
+  const primaryBtnBg = isPink ? '#F38CA3' : isFresh ? '#5FB36A' : theme.accent;
+  const primaryBtnText = isClassic ? '#8C1D18' : '#FFFFFF';
+  const primaryBtnShadow = (isPink || isFresh) ? {
+    shadowColor: isPink ? 'rgba(243,140,163,0.35)' : 'rgba(47, 94, 58, 0.3)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 4,
     elevation: 4,
   } : {};
-  const secondaryBtnBg = isClassic ? '#FADADD' : isFresh ? '#8FAE96' : isEmerald ? '#6F1612' : '#333333';
-  const secondaryBtnText = isClassic ? '#6B4A4A' : '#FFFFFF';
-  const secondaryBtnBorder = isClassic ? '#F3A6B1' : 'transparent';
-  const cardShadow = (isClassic || isFresh) ? {
-    shadowColor: isClassic ? 'rgba(90, 60, 65, 0.3)' : 'rgba(47, 94, 58, 0.25)',
+  const secondaryBtnBg = isPink ? '#FADADD' : isFresh ? '#8FAE96' : isClassic ? '#6F1612' : '#333333';
+  const secondaryBtnText = isPink ? '#6B4A4A' : '#FFFFFF';
+  const secondaryBtnBorder = isPink ? '#F3A6B1' : 'transparent';
+  const cardShadow = (isPink || isFresh) ? {
+    shadowColor: isPink ? 'rgba(90, 60, 65, 0.3)' : 'rgba(47, 94, 58, 0.25)',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 1,
     shadowRadius: 16,
     elevation: 8,
   } : {};
-  const cardRadius = (isClassic || isFresh) ? 20 : 16;
-  const cardBorderWidth = (isClassic || isFresh) ? 2 : 6;
+  const cardRadius = (isPink || isFresh) ? 20 : 16;
+  const cardBorderWidth = (isPink || isFresh) ? 2 : 6;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={[modalStyles.overlay, { backgroundColor: overlayBg }]}>
-        <View style={[modalStyles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderRadius: cardRadius, borderWidth: cardBorderWidth }, cardShadow]}>
-          <Text style={[modalStyles.header, { color: headerColor }]}>{displayHeader}</Text>
-          <View style={[modalStyles.resultBox, { backgroundColor: '#FFFFFF', borderColor: resultBoxBorder }, resultBoxShadow]}>
+        <View style={[modalStyles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderRadius: cardRadius, borderWidth: cardBorderWidth, maxWidth: cardMaxWidth }, cardShadow]}>
+          <Text style={[modalStyles.header, { color: headerColor, fontSize: isDesktop ? 28 : 24 }]}>{displayHeader}</Text>
+          <View style={[modalStyles.resultBox, { backgroundColor: '#FFFFFF', borderColor: resultBoxBorder, padding: isDesktop ? 40 : 30 }, resultBoxShadow]}>
             {result.option.type === 'text' ? (
-              <Text style={[modalStyles.resultText, { color: resultTextColor }]}>{result.option.content}</Text>
+              <Text style={[modalStyles.resultText, { color: resultTextColor, fontSize: isDesktop ? 56 : 48 }]}>{result.option.content}</Text>
             ) : (
               <View>
-                <Image source={{ uri: result.option.content }} style={[modalStyles.resultImage, { borderColor: resultBoxBorder }]} />
+                <Image
+                  source={{ uri: result.option.content }}
+                  style={[
+                    modalStyles.resultImage,
+                    {
+                      borderColor: resultBoxBorder,
+                      width: imageSize,
+                      height: imageSize,
+                      borderRadius: imageSize / 2,
+                    }
+                  ]}
+                />
               </View>
             )}
           </View>
@@ -588,6 +816,9 @@ function ResultModal({ visible, result, theme, customGreeting, onClose, onSpinAg
             <Text style={[modalStyles.secondaryBtnText, { color: secondaryBtnText }]}>重新製作</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Fireworks animation - on top of everything */}
+        <FireworksOverlay />
       </View>
     </Modal>
   );
@@ -609,78 +840,127 @@ const modalStyles = StyleSheet.create({
 // ============ HOME SCREEN ============
 function HomeScreen() {
   const { navigate, activeTheme } = useApp();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isClassic = activeTheme.id === 'classic';
   const isFresh = activeTheme.id === 'fresh';
 
-  // Theme specific colors
-  const cardBg = isClassic ? '#FADADD' : isFresh ? '#C9D6CC' : 'rgba(0,0,0,0.2)';
-  const cardBorder = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent;
-  const titleColor = isClassic ? '#6B4A4A' : isFresh ? '#2F5E3A' : activeTheme.text;
-  const subtitleColor = isClassic ? '#F3A6B1' : isFresh ? '#6F8F78' : activeTheme.accent;
-  const emojiBoxBorder = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent;
-  const emojiBoxBg = isClassic ? '#FFF6F7' : isFresh ? '#FFFFFF' : 'transparent';
-  const btnBg = isClassic ? '#F38CA3' : isFresh ? '#5FB36A' : (activeTheme.buttonBg || activeTheme.accent);
-  const btnText = '#FFFFFF';
-  const btnShadow = (isClassic || isFresh) ? {
-    shadowColor: isClassic ? 'rgba(243,140,163,0.35)' : 'rgba(47, 94, 58, 0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 4,
-  } : {};
-  const cardShadow = (isClassic || isFresh) ? {
-    shadowColor: isClassic ? 'rgba(90, 60, 65, 0.2)' : 'rgba(47, 94, 58, 0.15)',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 6,
-  } : {};
+  // Responsive design - larger on desktop
+  const isDesktop = Platform.OS === 'web' && windowWidth > 768;
+
+  // For classic theme, use the new Year of Horse design
+  if (isClassic) {
+    const horseBoxSize = isDesktop ? 130 : 110;
+    const yearFontSize = 42;
+    const titleFontSize = 40;
+    const subtitleFontSize = isDesktop ? 16 : 14;
+    const btnFontSize = isDesktop ? 20 : 18;
+    const cardPadH = isDesktop ? 60 : 40;
+    const cardPadV = isDesktop ? 50 : 40;
+
+    return (
+      <SafeAreaView style={[homeStyles.container, { backgroundColor: '#8C1D18' }]}>
+        <View style={[homeStyles.classicCard, { paddingHorizontal: cardPadH, paddingVertical: cardPadV }]}>
+          {/* Year Display: 二○二六 - both 二 in gold, ○ bold, 六 normal */}
+          <View style={homeStyles.yearRow}>
+            <Text style={[homeStyles.yearGold, { fontSize: yearFontSize }]}>二</Text>
+            <Text style={[homeStyles.yearZero, { fontSize: yearFontSize }]}>○</Text>
+            <Text style={[homeStyles.yearGold, { fontSize: yearFontSize }]}>二</Text>
+            <Text style={[homeStyles.yearCream, { fontSize: yearFontSize }]}>六</Text>
+          </View>
+
+          {/* Main Title - cream white, no extra spacing */}
+          <Text style={[homeStyles.classicTitle, { fontSize: titleFontSize }]}>開運LUCKY抽</Text>
+
+          {/* Subtitle - Trajan Pro font */}
+          <Text style={[homeStyles.classicSubtitle, { fontSize: subtitleFontSize }]}>Year of the Horse</Text>
+
+          {/* Horse Icon */}
+          <View style={[homeStyles.horseBox, { width: horseBoxSize, height: horseBoxSize, borderRadius: horseBoxSize / 2 }]}>
+            <Image source={require('./assets/horse-icon.png')} style={{ width: horseBoxSize * 0.375, height: horseBoxSize * 0.375 }} resizeMode="contain" />
+          </View>
+
+          {/* Two Buttons Row */}
+          <View style={homeStyles.classicBtnRow}>
+            <TouchableOpacity
+              style={homeStyles.classicBtn}
+              onPress={() => navigate('Setup')}
+              activeOpacity={0.8}
+            >
+              <Text style={homeStyles.classicBtnEmoji}>🎡</Text>
+              <Text style={[homeStyles.classicBtnText, { fontSize: btnFontSize }]}>輪盤製作</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={homeStyles.classicBtn}
+              onPress={() => navigate('PokeSetup')}
+              activeOpacity={0.8}
+            >
+              <Text style={homeStyles.classicBtnEmoji}>🎯</Text>
+              <Text style={[homeStyles.classicBtnText, { fontSize: btnFontSize }]}>戳戳樂</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Non-classic themes (pink/fresh) - similar layout to classic
+  const horseBoxSize = isDesktop ? 130 : 110;
+  const yearFontSize = 42;
+  const titleFontSize = 40;
+  const subtitleFontSize = isDesktop ? 16 : 14;
+  const btnFontSize = isDesktop ? 20 : 18;
+  const cardPadH = isDesktop ? 60 : 40;
+  const cardPadV = isDesktop ? 50 : 40;
+
+  // Theme colors based on THEMES definition
+  const isPink = activeTheme.id === 'pink';
+  const bgColor = isPink ? '#FFF1F3' : '#EEF6EE';
+  const cardBgColor = isPink ? '#FFF6F7' : '#FFFFFF';
+  const borderColor = isPink ? '#F3A6B1' : '#5FB36A';
+  const goldColor = isPink ? '#F38CA3' : '#5FB36A';
+  const creamColor = isPink ? '#6B4A4A' : '#2F5E3A';
+  const btnBgColor = isPink ? '#F38CA3' : '#5FB36A';
+  const btnTextColor = '#FFFFFF';
 
   return (
-    <SafeAreaView style={[homeStyles.container, { backgroundColor: activeTheme.bg }]}>
-      <View style={[homeStyles.card, { backgroundColor: cardBg, borderColor: cardBorder }, cardShadow]}>
-        {/* Horse Logo */}
-        <View style={[homeStyles.emojiBox, { borderColor: emojiBoxBorder, backgroundColor: emojiBoxBg }]}>
-          <Text style={homeStyles.emoji}>🐴</Text>
+    <SafeAreaView style={[homeStyles.container, { backgroundColor: bgColor }]}>
+      <View style={[homeStyles.classicCard, { backgroundColor: cardBgColor, borderColor: borderColor, paddingHorizontal: cardPadH, paddingVertical: cardPadV }]}>
+        {/* Year Display: 二○二六 */}
+        <View style={homeStyles.yearRow}>
+          <Text style={[homeStyles.yearGold, { fontSize: yearFontSize, color: goldColor }]}>二</Text>
+          <Text style={[homeStyles.yearZero, { fontSize: yearFontSize, color: creamColor }]}>○</Text>
+          <Text style={[homeStyles.yearGold, { fontSize: yearFontSize, color: goldColor }]}>二</Text>
+          <Text style={[homeStyles.yearCream, { fontSize: yearFontSize, color: creamColor }]}>六</Text>
         </View>
 
-        {/* App Title */}
-        <Text style={[homeStyles.appTitle, { color: titleColor }]}>LUCKY抽</Text>
-        <Text style={[homeStyles.subtitle, { color: subtitleColor }]}>幸運抽獎小幫手</Text>
+        {/* Main Title */}
+        <Text style={[homeStyles.classicTitle, { fontSize: titleFontSize, color: creamColor }]}>開運LUCKY抽</Text>
 
-        {/* Buttons */}
-        <View style={homeStyles.btnRow}>
+        {/* Subtitle */}
+        <Text style={[homeStyles.classicSubtitle, { fontSize: subtitleFontSize, color: goldColor }]}>Year of the Horse</Text>
+
+        {/* Horse Icon */}
+        <View style={[homeStyles.horseBox, { width: horseBoxSize, height: horseBoxSize, borderRadius: horseBoxSize / 2, borderColor: borderColor }]}>
+          <Image source={require('./assets/horse-icon.png')} style={{ width: horseBoxSize * 0.375, height: horseBoxSize * 0.375 }} resizeMode="contain" />
+        </View>
+
+        {/* Two Buttons Row */}
+        <View style={homeStyles.classicBtnRow}>
           <TouchableOpacity
-            style={[
-              homeStyles.btnHalf,
-              {
-                backgroundColor: btnBg,
-                borderColor: isClassic ? '#E77B94' : activeTheme.palette[1],
-                borderBottomWidth: isClassic ? 0 : 5,
-              },
-              btnShadow
-            ]}
+            style={[homeStyles.classicBtn, { backgroundColor: btnBgColor }]}
             onPress={() => navigate('Setup')}
             activeOpacity={0.8}
           >
-            <Text style={homeStyles.btnEmoji}>🎡</Text>
-            <Text style={[homeStyles.btnTextSmall, { color: btnText }]}>輪盤抽獎</Text>
+            <Text style={homeStyles.classicBtnEmoji}>🎡</Text>
+            <Text style={[homeStyles.classicBtnText, { fontSize: btnFontSize, color: btnTextColor }]}>輪盤製作</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              homeStyles.btnHalf,
-              {
-                backgroundColor: btnBg,
-                borderColor: isClassic ? '#E77B94' : activeTheme.palette[1],
-                borderBottomWidth: isClassic ? 0 : 5,
-              },
-              btnShadow
-            ]}
+            style={[homeStyles.classicBtn, { backgroundColor: btnBgColor }]}
             onPress={() => navigate('PokeSetup')}
             activeOpacity={0.8}
           >
-            <Text style={homeStyles.btnEmoji}>🎯</Text>
-            <Text style={[homeStyles.btnTextSmall, { color: btnText }]}>戳戳樂</Text>
+            <Text style={homeStyles.classicBtnEmoji}>🎯</Text>
+            <Text style={[homeStyles.classicBtnText, { fontSize: btnFontSize, color: btnTextColor }]}>戳戳樂</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -689,7 +969,85 @@ function HomeScreen() {
 }
 
 const homeStyles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: 80 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // Classic theme styles (Year of Horse design)
+  classicCard: {
+    backgroundColor: '#6F1612',
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#E6B65C',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    width: '94%',
+    maxWidth: 480,
+  },
+  yearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  yearGold: {
+    color: '#E6B65C',
+    fontWeight: 'bold',
+    letterSpacing: 10,
+  },
+  yearCream: {
+    color: '#FAF6EE',
+    fontWeight: 'normal',
+    letterSpacing: 10,
+  },
+  yearZero: {
+    color: '#FAF6EE',
+    fontWeight: 'bold',
+    letterSpacing: 10,
+  },
+  classicTitle: {
+    color: '#FAF6EE',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  classicSubtitle: {
+    color: '#E6B65C',
+    letterSpacing: 5,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 20,
+    fontWeight: 'normal',
+    fontFamily: 'Roboto, sans-serif',
+  },
+  horseBox: {
+    borderWidth: 2,
+    borderColor: '#E6B65C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    marginBottom: 24,
+  },
+  classicBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  classicBtn: {
+    flex: 1,
+    backgroundColor: '#E6B65C',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  classicBtnEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  classicBtnText: {
+    color: '#7A1616',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  // Original theme styles
   card: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 24, paddingVertical: 60, paddingHorizontal: 45, alignItems: 'center', borderWidth: 3, marginHorizontal: 20 },
   emojiBox: { width: 130, height: 130, borderRadius: 65, borderWidth: 4, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
   emoji: { fontSize: 65 },
@@ -704,6 +1062,11 @@ const homeStyles = StyleSheet.create({
 // ============ SETUP SCREEN ============
 function SetupScreen() {
   const { navigate, config, setConfig, activeTheme, setTheme, addOption, removeOption, updateOption, saveConfig } = useApp();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Responsive design - wider layout on desktop with left/right split
+  const isDesktop = Platform.OS === 'web' && windowWidth > 900;
+  const maxCardWidth = isDesktop ? 900 : windowWidth - 32;
 
   const handleAddOption = () => {
     if (config.options.length >= 12) {
@@ -716,10 +1079,13 @@ function SetupScreen() {
 
   const handlePhotoImport = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('需要權限', '請允許存取相簿');
-        return;
+      // Skip permission request on Web
+      if (Platform.OS !== 'web') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert('需要權限', '請允許存取相簿');
+          return;
+        }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -740,6 +1106,58 @@ function SetupScreen() {
     }
   };
 
+  const handleCSVImport = async () => {
+    if (Platform.OS === 'web') {
+      // Web: use file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.txt';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const lines = text.split(/[\r\n]+/).filter((line: string) => line.trim());
+          const remaining = 12 - config.options.length;
+          const newOptions: Option[] = lines.slice(0, remaining).map((line: string, i: number) => ({
+            id: `csv-${i}-${Date.now()}`,
+            type: 'text',
+            content: line.trim(),
+          }));
+          if (newOptions.length > 0) {
+            setConfig(prev => ({ ...prev, options: [...prev.options, ...newOptions] }));
+            Alert.alert('匯入成功', `已匯入 ${newOptions.length} 個選項`);
+          }
+        } catch {
+          Alert.alert('匯入失敗', '無法讀取檔案');
+        }
+      };
+      input.click();
+    } else {
+      // Native: use document picker
+      try {
+        const DocumentPicker = require('expo-document-picker');
+        const result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/plain'] });
+        if (result.canceled || !result.assets?.[0]) return;
+        const FileSystem = require('expo-file-system');
+        const text = await FileSystem.readAsStringAsync(result.assets[0].uri);
+        const lines = text.split(/[\r\n]+/).filter((line: string) => line.trim());
+        const remaining = 12 - config.options.length;
+        const newOptions: Option[] = lines.slice(0, remaining).map((line: string, i: number) => ({
+          id: `csv-${i}-${Date.now()}`,
+          type: 'text',
+          content: line.trim(),
+        }));
+        if (newOptions.length > 0) {
+          setConfig(prev => ({ ...prev, options: [...prev.options, ...newOptions] }));
+          Alert.alert('匯入成功', `已匯入 ${newOptions.length} 個選項`);
+        }
+      } catch {
+        Alert.alert('匯入失敗', '無法讀取檔案');
+      }
+    }
+  };
+
   const handleGo = async () => {
     if (config.options.length === 0) {
       Alert.alert('提示', '請先新增至少一個選項');
@@ -750,127 +1168,199 @@ function SetupScreen() {
   };
 
   // Theme specific card/header colors
-  const isClassic = activeTheme.id === 'classic';
-  const isFresh = activeTheme.id === 'fresh';
-  const cardBg = isClassic ? '#FFFFFF' : isFresh ? '#FFFFFF' : activeTheme.palette[0];
-  const headerBg = isClassic ? '#FADADD' : isFresh ? '#C9D6CC' : activeTheme.bg;
-  const closeBtnColor = isClassic ? '#A65C63' : isFresh ? '#2F5E3A' : activeTheme.accent;
-  const inputBorderColor = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent;
-  const deleteBtnColor = isClassic ? '#E07A86' : isFresh ? '#5FB36A' : activeTheme.accent;
-  const inputBg = isClassic ? '#FFFFFF' : isFresh ? '#FFFFFF' : activeTheme.bg;
+  const isClassic = activeTheme.id === 'classic'; // 喜氣
+  const isPink = activeTheme.id === 'pink'; // 粉春
+  const isFresh = activeTheme.id === 'fresh'; // 清新
+  const cardBg = isPink ? '#FFFFFF' : isFresh ? '#FFFFFF' : activeTheme.palette[0];
+  const headerBg = isPink ? '#FADADD' : isFresh ? '#C9D6CC' : activeTheme.bg;
+  const closeBtnColor = isPink ? '#A65C63' : isFresh ? '#2F5E3A' : activeTheme.accent;
+  const inputBorderColor = isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent;
+  const deleteBtnColor = isPink ? '#E07A86' : isFresh ? '#5FB36A' : activeTheme.accent;
+  const inputBg = isPink ? '#FFFFFF' : isFresh ? '#FFFFFF' : activeTheme.bg;
 
+  // Right panel content (settings and import buttons)
+  const rightPanelContent = (
+    <>
+      <Text style={[setupStyles.label, { color: activeTheme.label }]}>輪盤標題</Text>
+      <View style={[setupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+        <TextInput
+          style={[setupStyles.inputInner, { color: activeTheme.text }]}
+          value={config.name}
+          onChangeText={text => setConfig(prev => ({ ...prev, name: text }))}
+          placeholder="輸入輪盤標題"
+          placeholderTextColor={activeTheme.label}
+        />
+        <View style={setupStyles.editIconInner}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M14.06 6.19l3.75 3.75" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </View>
+      </View>
+
+      <Text style={[setupStyles.label, { color: activeTheme.label, marginTop: 16 }]}>中獎賀詞</Text>
+      <View style={[setupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+        <TextInput
+          style={[setupStyles.inputInner, { color: activeTheme.text }]}
+          value={config.customGreeting}
+          onChangeText={text => setConfig(prev => ({ ...prev, customGreeting: text }))}
+          placeholder="恭喜獲獎"
+          placeholderTextColor={isPink ? '#6B4A4A' : isFresh ? '#2F5E3A' : activeTheme.text}
+        />
+        <View style={setupStyles.editIconInner}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M14.06 6.19l3.75 3.75" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </View>
+      </View>
+
+      <Text style={[setupStyles.label, { color: activeTheme.label, marginTop: 16 }]}>主題配色</Text>
+      <View style={setupStyles.themeRow}>
+        {(Object.keys(THEMES) as ThemeId[]).map(tid => (
+          <TouchableOpacity
+            key={tid}
+            style={[
+              setupStyles.themeBtn,
+              { backgroundColor: THEMES[tid].bg, borderColor: config.themeId === tid ? THEMES[tid].accent : 'transparent' },
+            ]}
+            onPress={() => setTheme(tid)}
+          >
+            <Text style={[setupStyles.themeName, { color: THEMES[tid].text }]}>{THEMES[tid].name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity style={[setupStyles.addBtnLarge, { backgroundColor: activeTheme.accent, marginTop: 20 }]} onPress={handleAddOption}>
+        <Text style={[setupStyles.addBtnText, { color: activeTheme.buttonText || activeTheme.bg }]}>+ 新增選項</Text>
+      </TouchableOpacity>
+
+      {/* Photo Import Box */}
+      <View style={[setupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor, marginTop: 16 }]}>
+        <TouchableOpacity style={setupStyles.importBtn} onPress={handlePhotoImport}>
+          <Text style={[setupStyles.importBtnText, { color: isPink ? '#A65C63' : isFresh ? '#5FB36A' : activeTheme.accent }]}>📸 匯入相片</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* CSV Import Box */}
+      <View style={[setupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor, marginTop: 12 }]}>
+        <TouchableOpacity style={setupStyles.importBtn} onPress={handleCSVImport}>
+          <Text style={[setupStyles.importBtnText, { color: isPink ? '#A65C63' : isFresh ? '#5FB36A' : activeTheme.accent }]}>📄 匯入 CSV 名單</Text>
+        </TouchableOpacity>
+        <Text style={[setupStyles.importHint, { color: activeTheme.label }]}>每行一個選項</Text>
+      </View>
+    </>
+  );
+
+  // Left panel content (options list)
+  const leftPanelContent = (
+    <>
+      <View style={setupStyles.optionsHeader}>
+        <Text style={[setupStyles.sectionTitle, { color: activeTheme.text }]}>選項列表 ({config.options.length}/12)</Text>
+        <TouchableOpacity
+          style={[setupStyles.clearBtn, { borderColor: deleteBtnColor, opacity: config.options.length === 0 ? 0.4 : 1 }]}
+          onPress={() => config.options.length > 0 && setConfig(prev => ({ ...prev, options: [] }))}
+          disabled={config.options.length === 0}
+        >
+          <Text style={[setupStyles.clearBtnText, { color: deleteBtnColor }]}>清除</Text>
+        </TouchableOpacity>
+      </View>
+
+      {config.options.length === 0 ? (
+        <View style={[setupStyles.emptyBox, { borderColor: activeTheme.label }]}>
+          <Text style={[setupStyles.emptyText, { color: activeTheme.label }]}>目前沒有選項</Text>
+        </View>
+      ) : (
+        config.options.map((opt, i) => (
+          <View key={opt.id} style={[setupStyles.optionItem, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+            <View style={[setupStyles.optionIndex, { backgroundColor: PASTEL_COLORS[i % 12] }]}>
+              <Text style={[setupStyles.optionIndexText, { color: '#FFFFFF' }]}>{i + 1}</Text>
+            </View>
+            {opt.type === 'text' ? (
+              <TextInput
+                style={[setupStyles.optionInput, { color: activeTheme.text }]}
+                value={opt.content}
+                onChangeText={text => updateOption(opt.id, text)}
+              />
+            ) : (
+              <View style={setupStyles.imageOptionRow}>
+                <Image source={{ uri: opt.content }} style={setupStyles.optionThumbnail} />
+                <Text style={[setupStyles.optionLabel, { color: activeTheme.text }]}>{opt.label || '相片'}</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={() => removeOption(opt.id)}>
+              <Text style={[setupStyles.removeBtn, { color: deleteBtnColor }]}>×</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
+    </>
+  );
+
+  // Mobile layout (single column)
+  if (!isDesktop) {
+    return (
+      <SafeAreaView style={[setupStyles.container, { backgroundColor: activeTheme.bg }]}>
+        <View style={[setupStyles.card, { backgroundColor: cardBg, borderColor: activeTheme.accent, maxWidth: 480, width: '100%' }]}>
+          <View style={[setupStyles.header, { borderColor: activeTheme.accent, backgroundColor: headerBg }]}>
+            <Text style={[setupStyles.headerTitle, { color: activeTheme.text }]}>輪盤製作</Text>
+            <TouchableOpacity onPress={async () => { await saveConfig(); navigate('Home'); }}>
+              <Text style={[setupStyles.closeBtn, { color: closeBtnColor }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={setupStyles.content} showsVerticalScrollIndicator={false}>
+            {rightPanelContent}
+            <View style={{ marginTop: 20 }}>{leftPanelContent}</View>
+          </ScrollView>
+
+          <View style={[setupStyles.footer, { borderColor: inputBorderColor, backgroundColor: headerBg }]}>
+            <TouchableOpacity
+              style={[
+                setupStyles.goBtn,
+                {
+                  backgroundColor: activeTheme.buttonBg || activeTheme.accent,
+                  opacity: config.options.length === 0 ? 0.5 : 1,
+                  shadowColor: activeTheme.id === 'classic' ? 'rgba(243,140,163,0.35)' : '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: activeTheme.id === 'classic' ? 1 : 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                },
+              ]}
+              onPress={handleGo}
+              disabled={config.options.length === 0}
+            >
+              <Text style={[setupStyles.goBtnText, { color: activeTheme.buttonText || '#FFFFFF' }]}>抽獎GO</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Desktop layout (left/right split)
   return (
     <SafeAreaView style={[setupStyles.container, { backgroundColor: activeTheme.bg }]}>
-      <View style={[setupStyles.card, { backgroundColor: cardBg, borderColor: activeTheme.accent }]}>
+      <View style={[setupStyles.card, { backgroundColor: cardBg, borderColor: activeTheme.accent, maxWidth: maxCardWidth, width: '100%' }]}>
         <View style={[setupStyles.header, { borderColor: activeTheme.accent, backgroundColor: headerBg }]}>
           <Text style={[setupStyles.headerTitle, { color: activeTheme.text }]}>輪盤製作</Text>
-          <TouchableOpacity onPress={() => navigate('Home')}>
+          <TouchableOpacity onPress={async () => { await saveConfig(); navigate('Home'); }}>
             <Text style={[setupStyles.closeBtn, { color: closeBtnColor }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={setupStyles.content} showsVerticalScrollIndicator={false}>
-          <Text style={[setupStyles.label, { color: activeTheme.label }]}>輪盤標題</Text>
-          <View style={[setupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TextInput
-              style={[setupStyles.inputInner, { color: activeTheme.text }]}
-              value={config.name}
-              onChangeText={text => setConfig(prev => ({ ...prev, name: text }))}
-              placeholder="輸入輪盤標題"
-              placeholderTextColor={activeTheme.label}
-            />
-            <View style={setupStyles.editIconInner}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                <Path d="M14.06 6.19l3.75 3.75" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </View>
-          </View>
+        <View style={setupStyles.splitContainer}>
+          {/* Left panel - options list */}
+          <ScrollView style={setupStyles.leftPanel} showsVerticalScrollIndicator={false}>
+            {leftPanelContent}
+          </ScrollView>
 
-          <Text style={[setupStyles.label, { color: activeTheme.label, marginTop: 16 }]}>中獎賀詞</Text>
-          <View style={[setupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TextInput
-              style={[setupStyles.inputInner, { color: activeTheme.text }]}
-              value={config.customGreeting}
-              onChangeText={text => setConfig(prev => ({ ...prev, customGreeting: text }))}
-              placeholder="恭喜獲獎"
-              placeholderTextColor={isClassic ? '#6B4A4A' : isFresh ? '#2F5E3A' : activeTheme.text}
-            />
-            <View style={setupStyles.editIconInner}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                <Path d="M14.06 6.19l3.75 3.75" stroke="#999999" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </View>
-          </View>
-
-          <Text style={[setupStyles.label, { color: activeTheme.label, marginTop: 16 }]}>主題配色</Text>
-          <View style={setupStyles.themeRow}>
-            {(Object.keys(THEMES) as ThemeId[]).map(tid => (
-              <TouchableOpacity
-                key={tid}
-                style={[
-                  setupStyles.themeBtn,
-                  { backgroundColor: THEMES[tid].bg, borderColor: config.themeId === tid ? THEMES[tid].accent : 'transparent' },
-                ]}
-                onPress={() => setTheme(tid)}
-              >
-                <Text style={[setupStyles.themeName, { color: THEMES[tid].text }]}>{THEMES[tid].name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={setupStyles.optionsHeader}>
-            <Text style={[setupStyles.sectionTitle, { color: activeTheme.text }]}>選項列表 ({config.options.length}/12)</Text>
-            <View style={setupStyles.optionsBtnRow}>
-              <TouchableOpacity
-                style={[setupStyles.clearBtn, { borderColor: deleteBtnColor, opacity: config.options.length === 0 ? 0.4 : 1 }]}
-                onPress={() => config.options.length > 0 && setConfig(prev => ({ ...prev, options: [] }))}
-                disabled={config.options.length === 0}
-              >
-                <Text style={[setupStyles.clearBtnText, { color: deleteBtnColor }]}>清除</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[setupStyles.addBtn, { backgroundColor: activeTheme.accent }]} onPress={handleAddOption}>
-                <Text style={[setupStyles.addBtnText, { color: activeTheme.buttonText || activeTheme.bg }]}>+ 新增</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {config.options.length === 0 ? (
-            <View style={[setupStyles.emptyBox, { borderColor: activeTheme.label }]}>
-              <Text style={[setupStyles.emptyText, { color: activeTheme.label }]}>目前沒有選項</Text>
-            </View>
-          ) : (
-            config.options.map((opt, i) => (
-              <View key={opt.id} style={[setupStyles.optionItem, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-                <View style={[setupStyles.optionIndex, { backgroundColor: PASTEL_COLORS[i % 12] }]}>
-                  <Text style={[setupStyles.optionIndexText, { color: '#FFFFFF' }]}>{i + 1}</Text>
-                </View>
-                {opt.type === 'text' ? (
-                  <TextInput
-                    style={[setupStyles.optionInput, { color: activeTheme.text }]}
-                    value={opt.content}
-                    onChangeText={text => updateOption(opt.id, text)}
-                  />
-                ) : (
-                  <View style={setupStyles.imageOptionRow}>
-                    <Image source={{ uri: opt.content }} style={setupStyles.optionThumbnail} />
-                    <Text style={[setupStyles.optionLabel, { color: activeTheme.text }]}>{opt.label || '相片'}</Text>
-                  </View>
-                )}
-                <TouchableOpacity onPress={() => removeOption(opt.id)}>
-                  <Text style={[setupStyles.removeBtn, { color: deleteBtnColor }]}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-
-          <View style={[setupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TouchableOpacity style={setupStyles.importBtn} onPress={handlePhotoImport}>
-              <Text style={[setupStyles.importBtnText, { color: isClassic ? '#A65C63' : isFresh ? '#5FB36A' : activeTheme.accent }]}>📸 匯入相片</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+          {/* Right panel - settings and import */}
+          <ScrollView style={[setupStyles.rightPanel, { borderColor: inputBorderColor }]} showsVerticalScrollIndicator={false}>
+            {rightPanelContent}
+          </ScrollView>
+        </View>
 
         <View style={[setupStyles.footer, { borderColor: inputBorderColor, backgroundColor: headerBg }]}>
           <TouchableOpacity
@@ -898,7 +1388,7 @@ function SetupScreen() {
 }
 
 const setupStyles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, alignItems: 'center' },
   card: { flex: 1, borderRadius: 16, borderWidth: 4, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
@@ -930,18 +1420,31 @@ const setupStyles = StyleSheet.create({
   optionThumbnail: { width: 36, height: 36, borderRadius: 18, marginRight: 10 },
   removeBtn: { fontSize: 24 },
   importBox: { padding: 20, borderRadius: 12, borderWidth: 2, marginTop: 16, marginBottom: 20 },
-  importTitle: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
-  importBtn: { padding: 16, borderRadius: 12, alignItems: 'center' },
+  importTitle: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  importBtn: { padding: 14, borderRadius: 12, alignItems: 'center' },
   importBtnText: { fontSize: 16, fontWeight: 'bold' },
+  importHint: { fontSize: 12, textAlign: 'center', marginTop: 8 },
   footer: { padding: 16, borderTopWidth: 1 },
   goBtn: { padding: 18, borderRadius: 12, alignItems: 'center' },
   goBtnText: { fontSize: 24, fontWeight: 'bold' },
+  // Desktop split layout styles
+  splitContainer: { flex: 1, flexDirection: 'row' },
+  leftPanel: { flex: 1, padding: 16, paddingRight: 8 },
+  rightPanel: { width: 320, padding: 16, paddingLeft: 8, borderLeftWidth: 1 },
+  addBtnLarge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center' },
 });
 
 // ============ SPIN SCREEN ============
 function SpinScreen() {
   const { navigate, config, activeTheme, result, setResult } = useApp();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [spinning, setSpinning] = useState(false);
+
+  // Calculate optimal wheel size for current screen - maximize wheel size
+  const isDesktop = Platform.OS === 'web' && windowWidth > 768;
+  const maxWheelWidth = windowWidth - 40; // Less padding on sides
+  const maxWheelHeight = windowHeight - 220; // Less space reserved for title and button
+  const optimalWheelSize = Math.min(maxWheelWidth, maxWheelHeight, isDesktop ? 700 : 450);
 
   const handleSpin = () => {
     if (spinning || config.options.length < 1) return;
@@ -976,16 +1479,16 @@ function SpinScreen() {
   };
 
   // Use theme-defined button colors
-  const isClassic = activeTheme.id === 'classic';
-  const isFresh = activeTheme.id === 'fresh';
-  const isEmerald = activeTheme.id === 'emerald';
-  const buttonBg = isClassic ? '#F38CA3' : isFresh ? '#5FB36A' : (activeTheme.buttonBg || activeTheme.accent);
-  const buttonText = isEmerald ? '#8C1D18' : '#FFFFFF';
+  const isClassic = activeTheme.id === 'classic'; // 喜氣
+  const isPink = activeTheme.id === 'pink'; // 粉春
+  const isFresh = activeTheme.id === 'fresh'; // 清新
+  const buttonBg = isPink ? '#F38CA3' : isFresh ? '#5FB36A' : (activeTheme.buttonBg || activeTheme.accent);
+  const buttonText = isClassic ? '#8C1D18' : '#FFFFFF';
   // Theme specific back button
-  const backBtnBg = isClassic ? '#FADADD' : isFresh ? '#5FB36A' : buttonBg;
-  const backBtnText = isClassic ? '#A65C63' : isEmerald ? '#8C1D18' : '#FFFFFF';
-  const backBtnBorder = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : backBtnBg;
-  const shadowColor = isClassic ? 'rgba(243,140,163,0.3)' : isFresh ? 'rgba(47, 94, 58, 0.25)' : '#000';
+  const backBtnBg = isPink ? '#FADADD' : isFresh ? '#5FB36A' : buttonBg;
+  const backBtnText = isPink ? '#A65C63' : isClassic ? '#8C1D18' : '#FFFFFF';
+  const backBtnBorder = isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : backBtnBg;
+  const shadowColor = isPink ? 'rgba(243,140,163,0.3)' : isFresh ? 'rgba(47, 94, 58, 0.25)' : '#000';
 
   const content = (
     <>
@@ -1009,11 +1512,11 @@ function SpinScreen() {
 
       <View style={spinStyles.titleBox}>
         <Text style={[spinStyles.title, { color: activeTheme.text }]}>{config.name}</Text>
-        <View style={[spinStyles.titleLine, { backgroundColor: isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent }]} />
+        <View style={[spinStyles.titleLine, { backgroundColor: isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent }]} />
       </View>
 
       <View style={spinStyles.wheelBox}>
-        <Wheel options={config.options} palette={activeTheme.palette} theme={activeTheme} isSpinning={spinning} onSpinEnd={handleSpinEnd} />
+        <Wheel options={config.options} palette={activeTheme.palette} theme={activeTheme} isSpinning={spinning} onSpinEnd={handleSpinEnd} size={optimalWheelSize} />
       </View>
 
       <View style={spinStyles.btnBox}>
@@ -1023,9 +1526,9 @@ function SpinScreen() {
             {
               backgroundColor: buttonBg,
               opacity: spinning ? 0.7 : 1,
-              shadowColor: isClassic ? 'rgba(243,140,163,0.35)' : isFresh ? 'rgba(47, 94, 58, 0.3)' : '#000',
+              shadowColor: isPink ? 'rgba(243,140,163,0.35)' : isFresh ? 'rgba(47, 94, 58, 0.3)' : '#000',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: (isClassic || isFresh) ? 1 : 0.25,
+              shadowOpacity: (isPink || isFresh) ? 1 : 0.25,
               shadowRadius: 4,
               elevation: 4,
             },
@@ -1052,7 +1555,7 @@ function SpinScreen() {
     </>
   );
 
-  // Use gradient background for emerald theme
+  // Use gradient background for classic (喜氣) theme
   if (activeTheme.gradientTop && activeTheme.gradientBottom) {
     return (
       <LinearGradient
@@ -1076,20 +1579,25 @@ function SpinScreen() {
 const spinStyles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center' },
   safeArea: { flex: 1, width: '100%', alignItems: 'center' },
-  backBtn: { position: 'absolute', top: 60, left: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, zIndex: 10 },
+  backBtn: { position: 'absolute', top: 50, left: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, zIndex: 10 },
   backBtnText: { fontWeight: 'bold', fontSize: 14 },
-  titleBox: { marginTop: 100, alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center' },
-  titleLine: { width: 60, height: 3, borderRadius: 2, marginTop: 8 },
-  wheelBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  btnBox: { width: '100%', paddingHorizontal: 30, paddingBottom: 40 },
-  spinBtn: { paddingVertical: 20, borderRadius: 12, alignItems: 'center' },
-  spinBtnText: { fontSize: 28, fontWeight: 'bold' },
+  titleBox: { marginTop: 50, alignItems: 'center', marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+  titleLine: { width: 50, height: 3, borderRadius: 2, marginTop: 6 },
+  wheelBox: { alignItems: 'center', marginBottom: 20 },
+  btnBox: { width: '100%', paddingHorizontal: 50, paddingBottom: 30, maxWidth: 400 },
+  spinBtn: { paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  spinBtnText: { fontSize: 22, fontWeight: 'bold' },
 });
 
 // ============ POKE SETUP SCREEN ============
 function PokeSetupScreen() {
   const { navigate, pokeConfig, setPokeConfig, pokeTheme, setPokeTheme, addPokeOption, removePokeOption, updatePokeOption, savePokeConfig, setPokedCells } = useApp();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Responsive design - wider layout on desktop with left/right split
+  const isDesktop = Platform.OS === 'web' && windowWidth > 900;
+  const maxCardWidth = isDesktop ? 900 : windowWidth - 32;
 
   const handleAddOption = () => {
     if (pokeConfig.options.length >= 50) {
@@ -1102,10 +1610,13 @@ function PokeSetupScreen() {
 
   const handlePhotoImport = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('需要權限', '請允許存取相簿');
-        return;
+      // Skip permission request on Web
+      if (Platform.OS !== 'web') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert('需要權限', '請允許存取相簿');
+          return;
+        }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -1126,6 +1637,58 @@ function PokeSetupScreen() {
     }
   };
 
+  const handleCSVImport = async () => {
+    if (Platform.OS === 'web') {
+      // Web: use file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.txt';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const lines = text.split(/[\r\n]+/).filter((line: string) => line.trim());
+          const remaining = 50 - pokeConfig.options.length;
+          const newOptions: Option[] = lines.slice(0, remaining).map((line: string, i: number) => ({
+            id: `csv-${i}-${Date.now()}`,
+            type: 'text',
+            content: line.trim(),
+          }));
+          if (newOptions.length > 0) {
+            setPokeConfig(prev => ({ ...prev, options: [...prev.options, ...newOptions] }));
+            Alert.alert('匯入成功', `已匯入 ${newOptions.length} 個選項`);
+          }
+        } catch {
+          Alert.alert('匯入失敗', '無法讀取檔案');
+        }
+      };
+      input.click();
+    } else {
+      // Native: use document picker
+      try {
+        const DocumentPicker = require('expo-document-picker');
+        const result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/plain'] });
+        if (result.canceled || !result.assets?.[0]) return;
+        const FileSystem = require('expo-file-system');
+        const text = await FileSystem.readAsStringAsync(result.assets[0].uri);
+        const lines = text.split(/[\r\n]+/).filter((line: string) => line.trim());
+        const remaining = 50 - pokeConfig.options.length;
+        const newOptions: Option[] = lines.slice(0, remaining).map((line: string, i: number) => ({
+          id: `csv-${i}-${Date.now()}`,
+          type: 'text',
+          content: line.trim(),
+        }));
+        if (newOptions.length > 0) {
+          setPokeConfig(prev => ({ ...prev, options: [...prev.options, ...newOptions] }));
+          Alert.alert('匯入成功', `已匯入 ${newOptions.length} 個選項`);
+        }
+      } catch {
+        Alert.alert('匯入失敗', '無法讀取檔案');
+      }
+    }
+  };
+
   const handleGo = async () => {
     if (pokeConfig.options.length === 0) {
       Alert.alert('提示', '請先新增至少一個選項');
@@ -1137,115 +1700,184 @@ function PokeSetupScreen() {
   };
 
   // Theme specific styling
-  const isClassic = pokeTheme.id === 'classic';
-  const isFresh = pokeTheme.id === 'fresh';
-  const cardBg = isClassic ? '#FFFFFF' : isFresh ? '#FFFFFF' : pokeTheme.palette[0];
-  const headerBg = isClassic ? '#FADADD' : isFresh ? '#C9D6CC' : pokeTheme.bg;
-  const closeBtnColor = isClassic ? '#A65C63' : isFresh ? '#2F5E3A' : pokeTheme.accent;
-  const inputBorderColor = isClassic ? '#F3A6B1' : isFresh ? '#5FB36A' : pokeTheme.accent;
-  const deleteBtnColor = isClassic ? '#E07A86' : isFresh ? '#5FB36A' : pokeTheme.accent;
-  const inputBg = isClassic ? '#FFFFFF' : isFresh ? '#FFFFFF' : pokeTheme.bg;
+  const isClassic = pokeTheme.id === 'classic'; // 喜氣
+  const isPink = pokeTheme.id === 'pink'; // 粉春
+  const isFresh = pokeTheme.id === 'fresh'; // 清新
+  const cardBg = isPink ? '#FFFFFF' : isFresh ? '#FFFFFF' : pokeTheme.palette[0];
+  const headerBg = isPink ? '#FADADD' : isFresh ? '#C9D6CC' : pokeTheme.bg;
+  const closeBtnColor = isPink ? '#A65C63' : isFresh ? '#2F5E3A' : pokeTheme.accent;
+  const inputBorderColor = isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : pokeTheme.accent;
+  const deleteBtnColor = isPink ? '#E07A86' : isFresh ? '#5FB36A' : pokeTheme.accent;
+  const inputBg = isPink ? '#FFFFFF' : isFresh ? '#FFFFFF' : pokeTheme.bg;
 
+  // Right panel content (settings and import buttons)
+  const rightPanelContent = (
+    <>
+      <Text style={[pokeSetupStyles.label, { color: pokeTheme.label }]}>標題</Text>
+      <View style={[pokeSetupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+        <TextInput
+          style={[pokeSetupStyles.inputInner, { color: pokeTheme.text }]}
+          value={pokeConfig.name}
+          onChangeText={text => setPokeConfig(prev => ({ ...prev, name: text }))}
+          placeholder="輸入標題"
+          placeholderTextColor={pokeTheme.label}
+        />
+      </View>
+
+      <Text style={[pokeSetupStyles.label, { color: pokeTheme.label, marginTop: 16 }]}>中獎賀詞</Text>
+      <View style={[pokeSetupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+        <TextInput
+          style={[pokeSetupStyles.inputInner, { color: pokeTheme.text }]}
+          value={pokeConfig.customGreeting}
+          onChangeText={text => setPokeConfig(prev => ({ ...prev, customGreeting: text }))}
+          placeholder="恭喜獲獎"
+          placeholderTextColor={isPink ? '#6B4A4A' : isFresh ? '#2F5E3A' : pokeTheme.text}
+        />
+      </View>
+
+      <Text style={[pokeSetupStyles.label, { color: pokeTheme.label, marginTop: 16 }]}>主題配色</Text>
+      <View style={pokeSetupStyles.themeRow}>
+        {(Object.keys(THEMES) as ThemeId[]).map(tid => (
+          <TouchableOpacity
+            key={tid}
+            style={[
+              pokeSetupStyles.themeBtn,
+              { backgroundColor: THEMES[tid].bg, borderColor: pokeConfig.themeId === tid ? THEMES[tid].accent : 'transparent' },
+            ]}
+            onPress={() => setPokeTheme(tid)}
+          >
+            <Text style={[pokeSetupStyles.themeName, { color: THEMES[tid].text }]}>{THEMES[tid].name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Photo Import Box */}
+      <View style={[pokeSetupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor, marginTop: 20 }]}>
+        <Text style={[pokeSetupStyles.importTitle, { color: pokeTheme.text }]}>從相簿匯入</Text>
+        <TouchableOpacity style={pokeSetupStyles.importBtn} onPress={handlePhotoImport}>
+          <Text style={[pokeSetupStyles.importBtnText, { color: isPink ? '#A65C63' : isFresh ? '#5FB36A' : pokeTheme.accent }]}>📸 匯入相片</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* CSV Import Box */}
+      <View style={[pokeSetupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor, marginTop: 12 }]}>
+        <Text style={[pokeSetupStyles.importTitle, { color: pokeTheme.text }]}>從檔案匯入</Text>
+        <TouchableOpacity style={pokeSetupStyles.importBtn} onPress={handleCSVImport}>
+          <Text style={[pokeSetupStyles.importBtnText, { color: isPink ? '#A65C63' : isFresh ? '#5FB36A' : pokeTheme.accent }]}>📄 匯入 CSV 名單</Text>
+        </TouchableOpacity>
+        <Text style={[pokeSetupStyles.importHint, { color: pokeTheme.label }]}>每行一個選項</Text>
+      </View>
+
+      <TouchableOpacity style={[pokeSetupStyles.addBtnLarge, { backgroundColor: pokeTheme.accent, marginTop: 16 }]} onPress={handleAddOption}>
+        <Text style={[pokeSetupStyles.addBtnText, { color: pokeTheme.buttonText || pokeTheme.bg }]}>+ 新增選項</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  // Left panel content (options list)
+  const leftPanelContent = (
+    <>
+      <View style={pokeSetupStyles.optionsHeader}>
+        <Text style={[pokeSetupStyles.sectionTitle, { color: pokeTheme.text }]}>選項列表 ({pokeConfig.options.length})</Text>
+        <TouchableOpacity
+          style={[pokeSetupStyles.clearBtn, { borderColor: deleteBtnColor, opacity: pokeConfig.options.length === 0 ? 0.4 : 1 }]}
+          onPress={() => pokeConfig.options.length > 0 && setPokeConfig(prev => ({ ...prev, options: [] }))}
+          disabled={pokeConfig.options.length === 0}
+        >
+          <Text style={[pokeSetupStyles.clearBtnText, { color: deleteBtnColor }]}>清除</Text>
+        </TouchableOpacity>
+      </View>
+
+      {pokeConfig.options.length === 0 ? (
+        <View style={[pokeSetupStyles.emptyBox, { borderColor: pokeTheme.label }]}>
+          <Text style={[pokeSetupStyles.emptyText, { color: pokeTheme.label }]}>目前沒有選項</Text>
+        </View>
+      ) : (
+        pokeConfig.options.map((opt, i) => (
+          <View key={opt.id} style={[pokeSetupStyles.optionItem, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
+            <View style={[pokeSetupStyles.optionIndex, { backgroundColor: PASTEL_COLORS[i % 12] }]}>
+              <Text style={[pokeSetupStyles.optionIndexText, { color: '#FFFFFF' }]}>{i + 1}</Text>
+            </View>
+            {opt.type === 'text' ? (
+              <TextInput
+                style={[pokeSetupStyles.optionInput, { color: pokeTheme.text }]}
+                value={opt.content}
+                onChangeText={text => updatePokeOption(opt.id, text)}
+              />
+            ) : (
+              <View style={pokeSetupStyles.imageOptionRow}>
+                <Image source={{ uri: opt.content }} style={pokeSetupStyles.optionThumbnail} />
+                <Text style={[pokeSetupStyles.optionLabel, { color: pokeTheme.text }]}>{opt.label || '相片'}</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={() => removePokeOption(opt.id)}>
+              <Text style={[pokeSetupStyles.removeBtn, { color: deleteBtnColor }]}>×</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
+    </>
+  );
+
+  // Mobile layout (single column)
+  if (!isDesktop) {
+    return (
+      <SafeAreaView style={[pokeSetupStyles.container, { backgroundColor: pokeTheme.bg }]}>
+        <View style={[pokeSetupStyles.card, { backgroundColor: cardBg, borderColor: pokeTheme.accent, maxWidth: 480, width: '100%' }]}>
+          <View style={[pokeSetupStyles.header, { borderColor: pokeTheme.accent, backgroundColor: headerBg }]}>
+            <Text style={[pokeSetupStyles.headerTitle, { color: pokeTheme.text }]}>戳戳樂製作</Text>
+            <TouchableOpacity onPress={async () => { await savePokeConfig(); navigate('Home'); }}>
+              <Text style={[pokeSetupStyles.closeBtn, { color: closeBtnColor }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={pokeSetupStyles.content} showsVerticalScrollIndicator={false}>
+            {rightPanelContent}
+            <View style={{ marginTop: 20 }}>{leftPanelContent}</View>
+          </ScrollView>
+
+          <View style={[pokeSetupStyles.footer, { borderColor: inputBorderColor, backgroundColor: headerBg }]}>
+            <TouchableOpacity
+              style={[
+                pokeSetupStyles.goBtn,
+                {
+                  backgroundColor: pokeTheme.buttonBg || pokeTheme.accent,
+                  opacity: pokeConfig.options.length === 0 ? 0.5 : 1,
+                },
+              ]}
+              onPress={handleGo}
+              disabled={pokeConfig.options.length === 0}
+            >
+              <Text style={[pokeSetupStyles.goBtnText, { color: pokeTheme.buttonText || '#FFFFFF' }]}>開始戳戳樂</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Desktop layout (left/right split)
   return (
     <SafeAreaView style={[pokeSetupStyles.container, { backgroundColor: pokeTheme.bg }]}>
-      <View style={[pokeSetupStyles.card, { backgroundColor: cardBg, borderColor: pokeTheme.accent }]}>
+      <View style={[pokeSetupStyles.card, { backgroundColor: cardBg, borderColor: pokeTheme.accent, maxWidth: maxCardWidth, width: '100%' }]}>
         <View style={[pokeSetupStyles.header, { borderColor: pokeTheme.accent, backgroundColor: headerBg }]}>
           <Text style={[pokeSetupStyles.headerTitle, { color: pokeTheme.text }]}>戳戳樂製作</Text>
-          <TouchableOpacity onPress={() => navigate('Home')}>
+          <TouchableOpacity onPress={async () => { await savePokeConfig(); navigate('Home'); }}>
             <Text style={[pokeSetupStyles.closeBtn, { color: closeBtnColor }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={pokeSetupStyles.content} showsVerticalScrollIndicator={false}>
-          <Text style={[pokeSetupStyles.label, { color: pokeTheme.label }]}>標題</Text>
-          <View style={[pokeSetupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TextInput
-              style={[pokeSetupStyles.inputInner, { color: pokeTheme.text }]}
-              value={pokeConfig.name}
-              onChangeText={text => setPokeConfig(prev => ({ ...prev, name: text }))}
-              placeholder="輸入標題"
-              placeholderTextColor={pokeTheme.label}
-            />
-          </View>
+        <View style={pokeSetupStyles.splitContainer}>
+          {/* Left panel - options list */}
+          <ScrollView style={pokeSetupStyles.leftPanel} showsVerticalScrollIndicator={false}>
+            {leftPanelContent}
+          </ScrollView>
 
-          <Text style={[pokeSetupStyles.label, { color: pokeTheme.label, marginTop: 16 }]}>中獎賀詞</Text>
-          <View style={[pokeSetupStyles.inputWrapper, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TextInput
-              style={[pokeSetupStyles.inputInner, { color: pokeTheme.text }]}
-              value={pokeConfig.customGreeting}
-              onChangeText={text => setPokeConfig(prev => ({ ...prev, customGreeting: text }))}
-              placeholder="恭喜獲獎"
-              placeholderTextColor={isClassic ? '#6B4A4A' : isFresh ? '#2F5E3A' : pokeTheme.text}
-            />
-          </View>
-
-          <Text style={[pokeSetupStyles.label, { color: pokeTheme.label, marginTop: 16 }]}>主題配色</Text>
-          <View style={pokeSetupStyles.themeRow}>
-            {(Object.keys(THEMES) as ThemeId[]).map(tid => (
-              <TouchableOpacity
-                key={tid}
-                style={[
-                  pokeSetupStyles.themeBtn,
-                  { backgroundColor: THEMES[tid].bg, borderColor: pokeConfig.themeId === tid ? THEMES[tid].accent : 'transparent' },
-                ]}
-                onPress={() => setPokeTheme(tid)}
-              >
-                <Text style={[pokeSetupStyles.themeName, { color: THEMES[tid].text }]}>{THEMES[tid].name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={pokeSetupStyles.optionsHeader}>
-            <Text style={[pokeSetupStyles.sectionTitle, { color: pokeTheme.text }]}>選項列表 ({pokeConfig.options.length})</Text>
-            <View style={pokeSetupStyles.optionsBtnRow}>
-              <TouchableOpacity
-                style={[pokeSetupStyles.clearBtn, { borderColor: deleteBtnColor, opacity: pokeConfig.options.length === 0 ? 0.4 : 1 }]}
-                onPress={() => pokeConfig.options.length > 0 && setPokeConfig(prev => ({ ...prev, options: [] }))}
-                disabled={pokeConfig.options.length === 0}
-              >
-                <Text style={[pokeSetupStyles.clearBtnText, { color: deleteBtnColor }]}>清除</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[pokeSetupStyles.addBtn, { backgroundColor: pokeTheme.accent }]} onPress={handleAddOption}>
-                <Text style={[pokeSetupStyles.addBtnText, { color: pokeTheme.buttonText || pokeTheme.bg }]}>+ 新增</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {pokeConfig.options.length === 0 ? (
-            <View style={[pokeSetupStyles.emptyBox, { borderColor: pokeTheme.label }]}>
-              <Text style={[pokeSetupStyles.emptyText, { color: pokeTheme.label }]}>目前沒有選項</Text>
-            </View>
-          ) : (
-            pokeConfig.options.map((opt, i) => (
-              <View key={opt.id} style={[pokeSetupStyles.optionItem, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-                <View style={[pokeSetupStyles.optionIndex, { backgroundColor: PASTEL_COLORS[i % 12] }]}>
-                  <Text style={[pokeSetupStyles.optionIndexText, { color: '#FFFFFF' }]}>{i + 1}</Text>
-                </View>
-                {opt.type === 'text' ? (
-                  <TextInput
-                    style={[pokeSetupStyles.optionInput, { color: pokeTheme.text }]}
-                    value={opt.content}
-                    onChangeText={text => updatePokeOption(opt.id, text)}
-                  />
-                ) : (
-                  <View style={pokeSetupStyles.imageOptionRow}>
-                    <Image source={{ uri: opt.content }} style={pokeSetupStyles.optionThumbnail} />
-                    <Text style={[pokeSetupStyles.optionLabel, { color: pokeTheme.text }]}>{opt.label || '相片'}</Text>
-                  </View>
-                )}
-                <TouchableOpacity onPress={() => removePokeOption(opt.id)}>
-                  <Text style={[pokeSetupStyles.removeBtn, { color: deleteBtnColor }]}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-
-          <View style={[pokeSetupStyles.importBox, { backgroundColor: inputBg, borderColor: inputBorderColor }]}>
-            <TouchableOpacity style={pokeSetupStyles.importBtn} onPress={handlePhotoImport}>
-              <Text style={[pokeSetupStyles.importBtnText, { color: isClassic ? '#A65C63' : isFresh ? '#5FB36A' : pokeTheme.accent }]}>📸 匯入相片</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+          {/* Right panel - settings and import */}
+          <ScrollView style={[pokeSetupStyles.rightPanel, { borderColor: inputBorderColor }]} showsVerticalScrollIndicator={false}>
+            {rightPanelContent}
+          </ScrollView>
+        </View>
 
         <View style={[pokeSetupStyles.footer, { borderColor: inputBorderColor, backgroundColor: headerBg }]}>
           <TouchableOpacity
@@ -1268,7 +1900,7 @@ function PokeSetupScreen() {
 }
 
 const pokeSetupStyles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, alignItems: 'center' },
   card: { flex: 1, borderRadius: 16, borderWidth: 4, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
@@ -1298,24 +1930,35 @@ const pokeSetupStyles = StyleSheet.create({
   optionThumbnail: { width: 36, height: 36, borderRadius: 18, marginRight: 10 },
   removeBtn: { fontSize: 24 },
   importBox: { padding: 20, borderRadius: 12, borderWidth: 2, marginTop: 16, marginBottom: 20 },
-  importBtn: { padding: 16, borderRadius: 12, alignItems: 'center' },
+  importTitle: { fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  importBtn: { padding: 14, borderRadius: 12, alignItems: 'center' },
   importBtnText: { fontSize: 16, fontWeight: 'bold' },
+  importHint: { fontSize: 12, textAlign: 'center', marginTop: 8 },
   footer: { padding: 16, borderTopWidth: 1 },
   goBtn: { padding: 18, borderRadius: 12, alignItems: 'center' },
   goBtnText: { fontSize: 24, fontWeight: 'bold' },
+  // Desktop split layout styles
+  splitContainer: { flex: 1, flexDirection: 'row' },
+  leftPanel: { flex: 1, padding: 16, paddingRight: 8 },
+  rightPanel: { width: 320, padding: 16, paddingLeft: 8, borderLeftWidth: 1 },
+  addBtnLarge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center' },
 });
 
 // ============ POKE GAME SCREEN ============
 function PokeGameScreen() {
   const { navigate, pokeConfig, pokeTheme, pokedCells, setPokedCells, pokeResult, setPokeResult, savePokeConfig } = useApp();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Responsive design
+  const isDesktop = Platform.OS === 'web' && windowWidth > 768;
 
   // Calculate optimal grid based on number of options
   const { rows: gridRows, cols: gridCols } = calculateOptimalGrid(
     pokeConfig.options.length,
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT
+    windowWidth,
+    windowHeight
   );
   const totalCells = pokeConfig.options.length;
   const remainingOptions = pokeConfig.options.filter(
@@ -1358,27 +2001,28 @@ function PokeGameScreen() {
     setPokedCells([]);
   };
 
-  const isClassic = pokeTheme.id === 'classic';
-  const isFresh = pokeTheme.id === 'fresh';
-  const isEmerald = pokeTheme.id === 'emerald';
-  const buttonBg = isClassic ? '#F38CA3' : isFresh ? '#5FB36A' : (pokeTheme.buttonBg || pokeTheme.accent);
-  const buttonText = isEmerald ? '#8C1D18' : '#FFFFFF';
-  const backBtnBg = isClassic ? '#FADADD' : isFresh ? '#5FB36A' : buttonBg;
-  const backBtnText = isClassic ? '#A65C63' : isEmerald ? '#8C1D18' : '#FFFFFF';
+  const isClassic = pokeTheme.id === 'classic'; // 喜氣
+  const isPink = pokeTheme.id === 'pink'; // 粉春
+  const isFresh = pokeTheme.id === 'fresh'; // 清新
+  const buttonBg = isPink ? '#F38CA3' : isFresh ? '#5FB36A' : (pokeTheme.buttonBg || pokeTheme.accent);
+  const buttonText = isClassic ? '#8C1D18' : '#FFFFFF';
+  const backBtnBg = isPink ? '#FADADD' : isFresh ? '#5FB36A' : buttonBg;
+  const backBtnText = isPink ? '#A65C63' : isClassic ? '#8C1D18' : '#FFFFFF';
 
   // Calculate cell size to fit within screen (with padding and margins)
-  const horizontalPadding = 40; // Total horizontal padding
+  const horizontalPadding = isDesktop ? 80 : 40; // More padding on desktop
   const verticalPadding = 280; // Space for header, title, subtitle, and bottom button
-  const cellGap = 8; // Gap between cells
+  const cellGap = isDesktop ? 12 : 8; // Larger gap on desktop
 
-  const availableWidth = SCREEN_WIDTH - horizontalPadding - (cellGap * (gridCols - 1));
-  const availableHeight = SCREEN_HEIGHT - verticalPadding - (cellGap * (gridRows - 1));
+  const availableWidth = windowWidth - horizontalPadding - (cellGap * (gridCols - 1));
+  const availableHeight = windowHeight - verticalPadding - (cellGap * (gridRows - 1));
 
   const maxCellWidth = availableWidth / gridCols;
   const maxCellHeight = availableHeight / gridRows;
 
-  // Use the smaller of the two to ensure grid fits
-  const cellSize = Math.min(maxCellWidth, maxCellHeight, 100); // Cap at 100 max
+  // Use the smaller of the two to ensure grid fits - larger max on desktop
+  const maxCellSize = isDesktop ? 150 : 100;
+  const cellSize = Math.min(maxCellWidth, maxCellHeight, maxCellSize);
 
   const renderCell = (index: number) => {
     const pokedCell = pokedCells.find(c => c.cellIndex === index);
@@ -1551,9 +2195,16 @@ export default function App() {
     }
   };
 
+  // Use a ref to always have the latest config for saving
+  const configRef = React.useRef(config);
+  React.useEffect(() => {
+    configRef.current = config;
+  }, [config]);
+
   const saveConfig = async () => {
     try {
-      const updated = { ...config, updatedAt: Date.now() };
+      const currentConfig = configRef.current;
+      const updated = { ...currentConfig, updatedAt: Date.now() };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       setConfig(updated);
     } catch (e) {
@@ -1561,9 +2212,16 @@ export default function App() {
     }
   };
 
+  // Use a ref to always have the latest pokeConfig for saving
+  const pokeConfigRef = React.useRef(pokeConfig);
+  React.useEffect(() => {
+    pokeConfigRef.current = pokeConfig;
+  }, [pokeConfig]);
+
   const savePokeConfig = async () => {
     try {
-      const updated = { ...pokeConfig, updatedAt: Date.now() };
+      const currentConfig = pokeConfigRef.current;
+      const updated = { ...currentConfig, updatedAt: Date.now() };
       await AsyncStorage.setItem(POKE_STORAGE_KEY, JSON.stringify(updated));
       setPokeConfig(updated);
     } catch (e) {
@@ -1574,9 +2232,18 @@ export default function App() {
   const navigate = (screen: ScreenName) => setCurrentScreen(screen);
 
   // Wheel functions
-  const setTheme = (id: ThemeId) => {
-    setConfig(prev => ({ ...prev, themeId: id }));
+  const setTheme = async (id: ThemeId) => {
+    const currentConfig = configRef.current;
+    const newConfig = { ...currentConfig, themeId: id, updatedAt: Date.now() };
+    setConfig(newConfig);
+    configRef.current = newConfig; // Update ref immediately
     setPokeConfig(prev => ({ ...prev, themeId: id })); // Sync with poke theme
+    // Save immediately when theme changes
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+    } catch (e) {
+      console.error('Failed to save theme:', e);
+    }
   };
   const addOption = (opt: Option) => {
     if (config.options.length >= 12) return;
@@ -1589,9 +2256,22 @@ export default function App() {
   }));
 
   // Poke functions
-  const setPokeTheme = (id: ThemeId) => {
-    setPokeConfig(prev => ({ ...prev, themeId: id }));
-    setConfig(prev => ({ ...prev, themeId: id })); // Sync with wheel theme
+  const setPokeTheme = async (id: ThemeId) => {
+    const currentPokeConfig = pokeConfigRef.current;
+    const currentConfig = configRef.current;
+    const newPokeConfig = { ...currentPokeConfig, themeId: id, updatedAt: Date.now() };
+    const newConfig = { ...currentConfig, themeId: id, updatedAt: Date.now() };
+    setPokeConfig(newPokeConfig);
+    setConfig(newConfig);
+    pokeConfigRef.current = newPokeConfig;
+    configRef.current = newConfig;
+    // Save both immediately
+    try {
+      await AsyncStorage.setItem(POKE_STORAGE_KEY, JSON.stringify(newPokeConfig));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+    } catch (e) {
+      console.error('Failed to save theme:', e);
+    }
   };
   const addPokeOption = (opt: Option) => {
     if (pokeConfig.options.length >= 50) return;

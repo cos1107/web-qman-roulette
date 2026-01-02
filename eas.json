@@ -26,5 +26,14 @@
         "autoIncrement": "versionCode"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "cosine.jheng@gmail.com",
+        "appleTeamId": "875NP5634S",
+        "ascAppId": "6757150954"
+      }
+    }
   }
 }

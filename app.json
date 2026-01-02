@@ -15,11 +15,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cjhengdigital.luckydraw",
-      "buildNumber": "1",
+      "buildNumber": "3",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "允許存取相簿以匯入抽獎選項的照片",
         "NSPhotoLibraryAddUsageDescription": "允許儲存圖片至相簿",
-        "CFBundleDisplayName": "LUCKY抽"
+        "CFBundleDisplayName": "LUCKY抽",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -35,7 +36,12 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "LUCKY抽 - 輪盤與戳戳樂",
+      "shortName": "LUCKY抽",
+      "description": "線上製作輪盤抽獎與戳戳樂遊戲"
     },
     "plugins": [
       [

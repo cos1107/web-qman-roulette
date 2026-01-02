@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUCKY抽 App Store 截圖預覽</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+    .screenshots {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .screenshot {
+      width: 280px;
+      height: 560px;
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+      background: #000;
+    }
+    .screenshot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 30px;
+      background: #000;
+      border-radius: 0 0 20px 20px;
+      z-index: 100;
+    }
+    .screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px 30px;
+    }
+    .label {
+      text-align: center;
+      color: #fff;
+      margin-top: 15px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Screen 1: Home - 喜氣主題 */
+    .screen-home {
+      background: linear-gradient(180deg, #9B2C1F 0%, #8C1D18 50%, #6F1612 100%);
+    }
+    .home-card {
+      background: rgba(0,0,0,0.2);
+      border: 3px solid #E6B65C;
+      border-radius: 24px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .home-logo {
+      width: 90px;
+      height: 90px;
+      background: rgba(255,255,255,0.95);
+      border: 4px solid #E6B65C;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .home-title {
+      color: #FAF6EE;
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .home-subtitle {
+      color: #E6B65C;
+      font-size: 11px;
+      margin-top: 5px;
+      margin-bottom: 25px;
+    }
+    .home-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .home-btn {
+      background: #E6B65C;
+      border-radius: 12px;
+      padding: 12px 18px;
+      text-align: center;
+      border-bottom: 4px solid #6F1612;
+    }
+    .home-btn-emoji {
+      font-size: 26px;
+    }
+    .home-btn-text {
+      color: #8C1D18;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    /* Screen 2: Wheel Setup */
+    .screen-setup {
+      background: #8C1D18;
+      padding: 40px 15px 20px;
+      justify-content: flex-start;
+    }
+    .setup-card {
+      background: #9B2C1F;
+      border: 3px solid #E6B65C;
+      border-radius: 16px;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .setup-header {
+      background: #8C1D18;
+      padding: 12px 15px;
+      border-bottom: 1px solid #E6B65C;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .setup-header-title {
+      color: #FAF6EE;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .setup-close {
+      color: #E6B65C;
+      font-size: 20px;
+    }
+    .setup-content {
+      padding: 15px;
+    }
+    .setup-label {
+      color: #E6B65C;
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .setup-input {
+      background: #8C1D18;
+      border: 2px solid #E6B65C;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #FAF6EE;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .setup-themes {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    .setup-theme {
+      flex: 1;
+      padding: 10px 5px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      border: 2px solid transparent;
+    }
+    .setup-theme.active {
+      border-color: #E6B65C;
+    }
+    .setup-options-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .setup-options-title {
+      color: #FAF6EE;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .setup-add-btn {
+      background: #E6B65C;
+      color: #8C1D18;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .setup-option-item {
+      background: #8C1D18;
+      border: 1px solid #E6B65C;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .setup-option-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .setup-option-text {
+      color: #FAF6EE;
+      font-size: 12px;
+      flex: 1;
+    }
+    .setup-footer {
+      padding: 12px 15px;
+      background: #8C1D18;
+      border-top: 1px solid #E6B65C;
+    }
+    .setup-go-btn {
+      background: #E6B65C;
+      color: #8C1D18;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Screen 3: Wheel Spin with Photos */
+    .screen-spin {
+      background: linear-gradient(180deg, #9B2C1F 0%, #6F1612 100%);
+      justify-content: space-between;
+      padding: 50px 20px 25px;
+    }
+    .spin-title {
+      color: #FAF6EE;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .spin-title-line {
+      width: 50px;
+      height: 3px;
+      background: #E6B65C;
+      margin: 8px auto;
+      border-radius: 2px;
+    }
+    .wheel-container {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .wheel-photo {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      overflow: visible;
+    }
+    .wheel-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: #FAF6EE;
+      border: 3px solid #E6B65C;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-bottom: 18px solid #E6B65C;
+      z-index: 20;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .wheel-center-text {
+      color: #8C1D18;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .wheel-avatar {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 3px solid #E6B65C;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .spin-btn {
+      background: #E6B65C;
+      color: #8C1D18;
+      padding: 16px 50px;
+      border-radius: 12px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* Screen 4: Poke Setup - 粉春主題 */
+    .screen-poke-setup {
+      background: #FFF1F3;
+      padding: 40px 15px 20px;
+      justify-content: flex-start;
+    }
+    .poke-setup-card {
+      background: #FFFFFF;
+      border: 3px solid #F3A6B1;
+      border-radius: 16px;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .poke-setup-header {
+      background: #FADADD;
+      padding: 12px 15px;
+      border-bottom: 1px solid #F3A6B1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .poke-setup-header-title {
+      color: #6B4A4A;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .poke-setup-close {
+      color: #A65C63;
+      font-size: 20px;
+    }
+    .poke-setup-content {
+      padding: 15px;
+    }
+    .poke-setup-label {
+      color: #C9A5AA;
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .poke-setup-input {
+      background: #FFFFFF;
+      border: 2px solid #F3A6B1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #6B4A4A;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .poke-setup-themes {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    .poke-setup-theme {
+      flex: 1;
+      padding: 10px 5px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      border: 2px solid transparent;
+    }
+    .poke-setup-option-item {
+      background: #FFFFFF;
+      border: 1px solid #F3A6B1;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .poke-setup-footer {
+      padding: 12px 15px;
+      background: #FADADD;
+      border-top: 1px solid #F3A6B1;
+    }
+    .poke-setup-go-btn {
+      background: #F38CA3;
+      color: #FFFFFF;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Screen 5: Poke Game with Photos - 清新主題 */
+    .screen-poke-game {
+      background: #EEF6EE;
+      justify-content: space-between;
+      padding: 50px 20px 25px;
+    }
+    .poke-title {
+      color: #2F5E3A;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .poke-title-line {
+      width: 50px;
+      height: 3px;
+      background: #5FB36A;
+      margin: 8px auto;
+      border-radius: 2px;
+    }
+    .poke-subtitle {
+      color: #6F8F78;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .poke-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .poke-cell {
+      width: 68px;
+      height: 68px;
+      background: #5FB36A;
+      border: 3px solid #C9D6CC;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      overflow: hidden;
+    }
+    .poke-cell.revealed {
+      background: #fff;
+      border-color: #5FB36A;
+      padding: 0;
+    }
+    .poke-cell.revealed img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .poke-cell.revealed span {
+      color: #2F5E3A;
+      font-size: 14px;
+    }
+
+    .instructions {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      margin-top: 40px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .instructions h3 {
+      color: #fff;
+      margin-bottom: 15px;
+    }
+    .instructions p {
+      color: #aaa;
+      line-height: 1.8;
+    }
+    .instructions ol {
+      color: #aaa;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>LUCKY抽 App Store 截圖預覽</h1>
+  <p class="subtitle">6.7" Display (1290 x 2796)</p>
+
+  <div class="screenshots">
+    <!-- Screenshot 1: Home Screen -->
+    <div>
+      <div class="screenshot">
+        <div class="screen screen-home">
+          <div class="home-card">
+            <div class="home-logo">🐴</div>
+            <div class="home-title">LUCKY抽</div>
+            <div class="home-subtitle">幸運抽獎小幫手</div>
+            <div class="home-buttons">
+              <div class="home-btn">
+                <div class="home-btn-emoji">🎡</div>
+                <div class="home-btn-text">輪盤抽獎</div>
+              </div>
+              <div class="home-btn">
+                <div class="home-btn-emoji">🎯</div>
+                <div class="home-btn-text">戳戳樂</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">首頁</div>
+    </div>
+
+    <!-- Screenshot 2: Wheel Setup -->
+    <div>
+      <div class="screenshot">
+        <div class="screen screen-setup">
+          <div class="setup-card">
+            <div class="setup-header">
+              <span class="setup-header-title">輪盤製作</span>
+              <span class="setup-close">✕</span>
+            </div>
+            <div class="setup-content">
+              <div class="setup-label">輪盤標題</div>
+              <div class="setup-input">班級抽籤</div>
+
+              <div class="setup-label">主題配色</div>
+              <div class="setup-themes">
+                <div class="setup-theme active" style="background:#8C1D18;color:#FAF6EE;">喜氣</div>
+                <div class="setup-theme" style="background:#FFF1F3;color:#6B4A4A;">粉春</div>
+                <div class="setup-theme" style="background:#EEF6EE;color:#2F5E3A;">清新</div>
+              </div>
+
+              <div class="setup-options-header">
+                <span class="setup-options-title">選項列表 (6)</span>
+                <span class="setup-add-btn">📷 匯入照片</span>
+              </div>
+
+              <div class="setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=1" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span class="setup-option-text">小明</span>
+              </div>
+              <div class="setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=5" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span class="setup-option-text">小華</span>
+              </div>
+              <div class="setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=3" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span class="setup-option-text">小美</span>
+              </div>
+            </div>
+            <div class="setup-footer">
+              <div class="setup-go-btn">抽獎GO</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">輪盤設定</div>
+    </div>
+
+    <!-- Screenshot 3: Wheel Spin with Photos -->
+    <div>
+      <div class="screenshot">
+        <div class="screen screen-spin">
+          <div>
+            <div class="spin-title">班級抽籤</div>
+            <div class="spin-title-line"></div>
+          </div>
+          <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div class="wheel-photo">
+              <!-- Colorful wheel with circular photos -->
+              <svg viewBox="0 0 220 220" style="width:100%;height:100%;">
+                <!-- 8 colored segments -->
+                <path d="M110,110 L110,10 A100,100 0 0,1 180.7,39.3 Z" fill="#FFB6C1"/>
+                <path d="M110,110 L180.7,39.3 A100,100 0 0,1 210,110 Z" fill="#FF6B6B"/>
+                <path d="M110,110 L210,110 A100,100 0 0,1 180.7,180.7 Z" fill="#FFE66D"/>
+                <path d="M110,110 L180.7,180.7 A100,100 0 0,1 110,210 Z" fill="#98D8AA"/>
+                <path d="M110,110 L110,210 A100,100 0 0,1 39.3,180.7 Z" fill="#87CEEB"/>
+                <path d="M110,110 L39.3,180.7 A100,100 0 0,1 10,110 Z" fill="#DDA0DD"/>
+                <path d="M110,110 L10,110 A100,100 0 0,1 39.3,39.3 Z" fill="#F0E68C"/>
+                <path d="M110,110 L39.3,39.3 A100,100 0 0,1 110,10 Z" fill="#98FB98"/>
+                <!-- Divider lines -->
+                <line x1="110" y1="110" x2="110" y2="10" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="180.7" y2="39.3" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="210" y2="110" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="180.7" y2="180.7" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="110" y2="210" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="39.3" y2="180.7" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="10" y2="110" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                <line x1="110" y1="110" x2="39.3" y2="39.3" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+              </svg>
+              <!-- Circular photo avatars positioned on segments -->
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=1" style="top:18px;left:91px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=5" style="top:42px;left:155px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=3" style="top:91px;left:175px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=8" style="top:145px;left:155px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=9" style="top:170px;left:91px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=12" style="top:145px;left:27px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=15" style="top:91px;left:7px;">
+              <img class="wheel-avatar" src="https://i.pravatar.cc/80?img=20" style="top:42px;left:27px;">
+            </div>
+            <div class="wheel-center">
+              <span class="wheel-center-text">福</span>
+            </div>
+          </div>
+          <div class="spin-btn">開運旋轉</div>
+        </div>
+      </div>
+      <div class="label">照片輪盤抽獎</div>
+    </div>
+
+    <!-- Screenshot 4: Poke Setup -->
+    <div>
+      <div class="screenshot">
+        <div class="screen screen-poke-setup">
+          <div class="poke-setup-card">
+            <div class="poke-setup-header">
+              <span class="poke-setup-header-title">戳戳樂製作</span>
+              <span class="poke-setup-close">✕</span>
+            </div>
+            <div class="poke-setup-content">
+              <div class="poke-setup-label">標題</div>
+              <div class="poke-setup-input">班級點名戳戳樂</div>
+
+              <div class="poke-setup-label">主題配色</div>
+              <div class="poke-setup-themes">
+                <div class="poke-setup-theme" style="background:#8C1D18;color:#FAF6EE;">喜氣</div>
+                <div class="poke-setup-theme active" style="background:#FFF1F3;color:#6B4A4A;border-color:#F3A6B1;">粉春</div>
+                <div class="poke-setup-theme" style="background:#EEF6EE;color:#2F5E3A;">清新</div>
+              </div>
+
+              <div class="setup-options-header">
+                <span style="color:#6B4A4A;font-size:13px;font-weight:bold;">選項列表 (9)</span>
+                <span style="background:#F38CA3;color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:bold;">📷 匯入照片</span>
+              </div>
+
+              <div class="poke-setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=1" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span style="color:#6B4A4A;font-size:12px;">小明</span>
+              </div>
+              <div class="poke-setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=5" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span style="color:#6B4A4A;font-size:12px;">小華</span>
+              </div>
+              <div class="poke-setup-option-item">
+                <img src="https://i.pravatar.cc/40?img=3" style="width:28px;height:28px;border-radius:8px;object-fit:cover;">
+                <span style="color:#6B4A4A;font-size:12px;">小美</span>
+              </div>
+            </div>
+            <div class="poke-setup-footer">
+              <div class="poke-setup-go-btn">開始戳戳樂</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">戳戳樂設定</div>
+    </div>
+
+    <!-- Screenshot 5: Poke Game with Photos -->
+    <div>
+      <div class="screenshot">
+        <div class="screen screen-poke-game">
+          <div>
+            <div class="poke-title">班級點名戳戳樂</div>
+            <div class="poke-title-line"></div>
+            <div class="poke-subtitle">剩餘 6 / 9</div>
+          </div>
+          <div class="poke-grid">
+            <div class="poke-cell revealed"><img src="https://i.pravatar.cc/100?img=1" alt="student"></div>
+            <div class="poke-cell">?</div>
+            <div class="poke-cell revealed"><img src="https://i.pravatar.cc/100?img=5" alt="student"></div>
+            <div class="poke-cell">?</div>
+            <div class="poke-cell revealed"><img src="https://i.pravatar.cc/100?img=3" alt="student"></div>
+            <div class="poke-cell">?</div>
+            <div class="poke-cell">?</div>
+            <div class="poke-cell">?</div>
+            <div class="poke-cell">?</div>
+          </div>
+          <div style="background:#5FB36A;color:#fff;padding:14px 40px;border-radius:12px;font-size:18px;font-weight:bold;opacity:0.5;">重新開始</div>
+        </div>
+      </div>
+      <div class="label">照片戳戳樂遊戲</div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h3>📸 如何製作正式截圖</h3>
+    <p>App Store 需要真實的手機截圖。請按照以下步驟：</p>
+    <ol>
+      <li>用 iPhone 開啟 App（透過 Expo Go 或 TestFlight）</li>
+      <li>在每個畫面按下 <strong>電源鍵 + 音量上鍵</strong> 截圖</li>
+      <li>需要的截圖尺寸：<strong>6.7" (1290x2796)</strong> 和 <strong>6.5" (1284x2778)</strong></li>
+      <li>截圖內容建議：首頁、輪盤設定、輪盤旋轉、戳戳樂設定、戳戳樂遊戲</li>
+    </ol>
+  </div>
+</body>
+</html>
