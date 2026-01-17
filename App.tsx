@@ -93,6 +93,9 @@ function HorseIcon({ size = 80 }: { size?: number }) {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { createShare, createShareWithResult, loadShare, getShareUrl, SharedConfig, SharedResult, GameType } from './src/services/share';
+import { shareContent } from './src/services/nativeShare';
+import { captureRef } from 'react-native-view-shot';
 
 // ============ TYPES ============
 type ScreenName = 'Home' | 'Setup' | 'Spin' | 'PokeSetup' | 'PokeGame';
@@ -290,6 +293,18 @@ interface AppContextType {
   setPokedCells: React.Dispatch<React.SetStateAction<PokedCell[]>>;
   pokeResult: SpinResult | null;
   setPokeResult: React.Dispatch<React.SetStateAction<SpinResult | null>>;
+  // Share state
+  isSharing: boolean;
+  shareUrl: string | null;
+  shareModalVisible: boolean;
+  setShareModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  handleShare: (type: GameType) => Promise<void>;
+  isSharedMode: boolean;
+  // Result sharing (Entry Point 2)
+  isResultSharing: boolean;
+  handleShareResult: (type: GameType, result: SpinResult) => Promise<void>;
+  // Shared result data
+  sharedResultData: SharedResult | null;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -594,6 +609,10 @@ interface ResultModalProps {
   onSpinAgain: () => void;
   onReset: () => void;
   againButtonText?: string;
+  // Entry Point 2: Result sharing
+  onShareResult?: () => void;
+  isShareLoading?: boolean;
+  configName?: string;
 }
 
 // Firework particle component - larger and more visible
@@ -714,7 +733,7 @@ function FireworksOverlay() {
   );
 }
 
-function ResultModal({ visible, result, theme, customGreeting, onClose, onSpinAgain, onReset, againButtonText = '再來一次' }: ResultModalProps) {
+function ResultModal({ visible, result, theme, customGreeting, onClose, onSpinAgain, onReset, againButtonText = '再來一次', onShareResult, isShareLoading, configName }: ResultModalProps) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   if (!result) return null;
@@ -802,6 +821,25 @@ function ResultModal({ visible, result, theme, customGreeting, onClose, onSpinAg
           >
             <Text style={[modalStyles.primaryBtnText, { color: primaryBtnText }]}>{againButtonText}</Text>
           </TouchableOpacity>
+          {onShareResult && (
+            <TouchableOpacity
+              style={[
+                modalStyles.shareResultBtn,
+                {
+                  backgroundColor: 'transparent',
+                  borderWidth: 2,
+                  borderColor: primaryBtnBg,
+                  opacity: isShareLoading ? 0.6 : 1,
+                }
+              ]}
+              onPress={onShareResult}
+              disabled={isShareLoading}
+            >
+              <Text style={[modalStyles.shareResultBtnText, { color: primaryBtnBg }]}>
+                {isShareLoading ? '分享中...' : '分享結果'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[
               modalStyles.secondaryBtn,
@@ -833,6 +871,8 @@ const modalStyles = StyleSheet.create({
   resultImage: { width: 150, height: 150, borderRadius: 75, borderWidth: 4 },
   primaryBtn: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12, marginTop: 10 },
   primaryBtnText: { fontSize: 20, fontWeight: 'bold' },
+  shareResultBtn: { padding: 14, borderRadius: 12, alignItems: 'center', marginBottom: 12 },
+  shareResultBtnText: { fontSize: 16, fontWeight: 'bold' },
   secondaryBtn: { padding: 14, borderRadius: 12, alignItems: 'center' },
   secondaryBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fef3c7' },
 });
@@ -1436,7 +1476,7 @@ const setupStyles = StyleSheet.create({
 
 // ============ SPIN SCREEN ============
 function SpinScreen() {
-  const { navigate, config, activeTheme, result, setResult } = useApp();
+  const { navigate, config, activeTheme, result, setResult, isSharing, handleShare, isResultSharing, handleShareResult } = useApp();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [spinning, setSpinning] = useState(false);
 
@@ -1510,6 +1550,24 @@ function SpinScreen() {
         <Text style={[spinStyles.backBtnText, { color: backBtnText }]}>← 返回</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={[
+          spinStyles.shareBtn,
+          {
+            backgroundColor: 'transparent',
+            borderColor: activeTheme.accent,
+            borderWidth: 2,
+            opacity: isSharing ? 0.5 : 1,
+          },
+        ]}
+        onPress={() => handleShare('wheel')}
+        disabled={isSharing}
+      >
+        <Text style={[spinStyles.shareBtnText, { color: activeTheme.text }]}>
+          {isSharing ? '分享中...' : '分享'}
+        </Text>
+      </TouchableOpacity>
+
       <View style={spinStyles.titleBox}>
         <Text style={[spinStyles.title, { color: activeTheme.text }]}>{config.name}</Text>
         <View style={[spinStyles.titleLine, { backgroundColor: isPink ? '#F3A6B1' : isFresh ? '#5FB36A' : activeTheme.accent }]} />
@@ -1551,6 +1609,9 @@ function SpinScreen() {
         onClose={() => setResult(null)}
         onSpinAgain={handleSpinAgain}
         onReset={handleReset}
+        onShareResult={result ? () => handleShareResult('wheel', result) : undefined}
+        isShareLoading={isResultSharing}
+        configName={config.name}
       />
     </>
   );
@@ -1581,6 +1642,8 @@ const spinStyles = StyleSheet.create({
   safeArea: { flex: 1, width: '100%', alignItems: 'center' },
   backBtn: { position: 'absolute', top: 50, left: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, zIndex: 10 },
   backBtnText: { fontWeight: 'bold', fontSize: 14 },
+  shareBtn: { position: 'absolute', top: 50, right: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, zIndex: 10 },
+  shareBtnText: { fontWeight: 'bold', fontSize: 14 },
   titleBox: { marginTop: 50, alignItems: 'center', marginBottom: 10 },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
   titleLine: { width: 50, height: 3, borderRadius: 2, marginTop: 6 },
@@ -1946,7 +2009,7 @@ const pokeSetupStyles = StyleSheet.create({
 
 // ============ POKE GAME SCREEN ============
 function PokeGameScreen() {
-  const { navigate, pokeConfig, pokeTheme, pokedCells, setPokedCells, pokeResult, setPokeResult, savePokeConfig } = useApp();
+  const { navigate, pokeConfig, pokeTheme, pokedCells, setPokedCells, pokeResult, setPokeResult, savePokeConfig, isSharing, handleShare, isResultSharing, handleShareResult } = useApp();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -2073,6 +2136,24 @@ function PokeGameScreen() {
         <Text style={[pokeGameStyles.backBtnText, { color: backBtnText }]}>← 返回</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={[
+          pokeGameStyles.shareBtn,
+          {
+            backgroundColor: 'transparent',
+            borderColor: pokeTheme.accent,
+            borderWidth: 2,
+            opacity: isSharing ? 0.5 : 1,
+          },
+        ]}
+        onPress={() => handleShare('poke')}
+        disabled={isSharing}
+      >
+        <Text style={[pokeGameStyles.shareBtnText, { color: pokeTheme.text }]}>
+          {isSharing ? '分享中...' : '分享'}
+        </Text>
+      </TouchableOpacity>
+
       <View style={pokeGameStyles.titleBox}>
         <Text style={[pokeGameStyles.title, { color: pokeTheme.text }]}>{pokeConfig.name}</Text>
         <View style={[pokeGameStyles.titleLine, { backgroundColor: pokeTheme.accent }]} />
@@ -2114,6 +2195,10 @@ function PokeGameScreen() {
         onClose={() => setPokeResult(null)}
         onSpinAgain={handlePokeAgain}
         onReset={handleReset}
+        onShareResult={pokeResult ? () => handleShareResult('poke', pokeResult) : undefined}
+        isShareLoading={isResultSharing}
+        configName={pokeConfig.name}
+        againButtonText="再戳一次"
       />
     </>
   );
@@ -2143,6 +2228,8 @@ const pokeGameStyles = StyleSheet.create({
   safeArea: { flex: 1, width: '100%', alignItems: 'center' },
   backBtn: { position: 'absolute', top: 60, left: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, zIndex: 10 },
   backBtnText: { fontWeight: 'bold', fontSize: 14 },
+  shareBtn: { position: 'absolute', top: 60, right: 20, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, zIndex: 10 },
+  shareBtnText: { fontWeight: 'bold', fontSize: 14 },
   titleBox: { marginTop: 100, alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center' },
   titleLine: { width: 60, height: 3, borderRadius: 2, marginTop: 8 },
@@ -2158,6 +2245,124 @@ const pokeGameStyles = StyleSheet.create({
   restartBtnText: { fontSize: 22, fontWeight: 'bold' },
 });
 
+// ============ SHARE MODAL ============
+interface ShareModalProps {
+  visible: boolean;
+  shareUrl: string | null;
+  onClose: () => void;
+  theme: Theme;
+}
+
+function ShareModal({ visible, shareUrl, onClose, theme }: ShareModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    try {
+      if (Platform.OS === 'web' && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // For native, you might need expo-clipboard
+        Alert.alert('複製連結', shareUrl);
+      }
+    } catch (e) {
+      console.error('Failed to copy:', e);
+      Alert.alert('複製失敗', '請手動複製連結');
+    }
+  };
+
+  if (!visible) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={shareModalStyles.overlay}>
+        <View style={[shareModalStyles.container, { backgroundColor: theme.bg, borderColor: theme.accent }]}>
+          <Text style={[shareModalStyles.title, { color: theme.text }]}>分享成功！</Text>
+          <Text style={[shareModalStyles.subtitle, { color: theme.text }]}>複製以下連結分享給朋友</Text>
+
+          <View style={[shareModalStyles.urlBox, { backgroundColor: theme.id === 'classic' ? '#6F1612' : 'rgba(0,0,0,0.1)', borderColor: theme.accent }]}>
+            <Text style={[shareModalStyles.urlText, { color: theme.text }]} numberOfLines={2} selectable>
+              {shareUrl}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[shareModalStyles.copyBtn, { backgroundColor: theme.accent }]}
+            onPress={handleCopy}
+          >
+            <Text style={[shareModalStyles.copyBtnText, { color: theme.buttonText || '#FFFFFF' }]}>
+              {copied ? '已複製！' : '複製連結'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={shareModalStyles.closeBtn} onPress={onClose}>
+            <Text style={[shareModalStyles.closeBtnText, { color: theme.text }]}>關閉</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const shareModalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    borderWidth: 3,
+    padding: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  urlBox: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 20,
+  },
+  urlText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  copyBtn: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  copyBtnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  closeBtn: {
+    padding: 12,
+  },
+  closeBtnText: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+});
+
 // ============ MAIN APP ============
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('Home');
@@ -2168,9 +2373,118 @@ export default function App() {
   const [pokeConfig, setPokeConfig] = useState<PokeConfig>(DEFAULT_POKE_CONFIG);
   const [pokedCells, setPokedCells] = useState<PokedCell[]>([]);
   const [pokeResult, setPokeResult] = useState<SpinResult | null>(null);
+  // Share state
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [isLoadingShare, setIsLoadingShare] = useState(false);
+  const [isSharedMode, setIsSharedMode] = useState(false);
+  // Result sharing (Entry Point 2)
+  const [isResultSharing, setIsResultSharing] = useState(false);
+  const [sharedResultData, setSharedResultData] = useState<SharedResult | null>(null);
 
   const activeTheme = THEMES[config.themeId];
   const pokeTheme = THEMES[pokeConfig.themeId];
+
+  // Check for share URL parameter on mount
+  useEffect(() => {
+    const checkShareParam = async () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        // Check both ?share=xxx (from Vercel rewrite) and /s/xxx (direct path)
+        const params = new URLSearchParams(window.location.search);
+        let shareId = params.get('share');
+
+        // Also check path format /s/xxx (for local testing or direct access)
+        if (!shareId) {
+          const pathMatch = window.location.pathname.match(/^\/s\/([a-zA-Z0-9]+)$/);
+          if (pathMatch) {
+            shareId = pathMatch[1];
+          }
+        }
+
+        if (shareId) {
+          setIsLoadingShare(true);
+          try {
+            const sharedConfig = await loadShare(shareId);
+            if (sharedConfig) {
+              setIsSharedMode(true);
+
+              // Check if this is a result share
+              if (sharedConfig.sharedResult) {
+                setSharedResultData(sharedConfig.sharedResult);
+              }
+
+              if (sharedConfig.type === 'wheel') {
+                setConfig({
+                  id: sharedConfig.id,
+                  name: sharedConfig.name,
+                  customGreeting: sharedConfig.customGreeting,
+                  options: sharedConfig.options,
+                  themeId: sharedConfig.themeId,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                });
+
+                // If result share, set result to show modal immediately
+                if (sharedConfig.sharedResult) {
+                  const resultOption = sharedConfig.options.find(
+                    o => o.id === sharedConfig.sharedResult?.optionId
+                  ) || {
+                    id: sharedConfig.sharedResult.optionId,
+                    type: sharedConfig.sharedResult.optionType,
+                    content: sharedConfig.sharedResult.optionContent,
+                    label: sharedConfig.sharedResult.optionLabel,
+                  };
+                  setResult({
+                    option: resultOption,
+                    index: 0,
+                  });
+                }
+                setCurrentScreen('Spin');
+              } else {
+                setPokeConfig({
+                  id: sharedConfig.id,
+                  name: sharedConfig.name,
+                  customGreeting: sharedConfig.customGreeting,
+                  options: sharedConfig.options,
+                  themeId: sharedConfig.themeId,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                });
+                setPokedCells([]);
+
+                // If result share, set result to show modal immediately
+                if (sharedConfig.sharedResult) {
+                  const resultOption = sharedConfig.options.find(
+                    o => o.id === sharedConfig.sharedResult?.optionId
+                  ) || {
+                    id: sharedConfig.sharedResult.optionId,
+                    type: sharedConfig.sharedResult.optionType,
+                    content: sharedConfig.sharedResult.optionContent,
+                    label: sharedConfig.sharedResult.optionLabel,
+                  };
+                  setPokeResult({
+                    option: resultOption,
+                    index: 0,
+                  });
+                }
+                setCurrentScreen('PokeGame');
+              }
+              // Clear the URL parameter
+              window.history.replaceState({}, '', window.location.pathname);
+            } else {
+              Alert.alert('載入失敗', '找不到分享的內容');
+            }
+          } catch (e) {
+            console.error('Failed to load shared config:', e);
+            Alert.alert('載入失敗', '無法載入分享的內容');
+          }
+          setIsLoadingShare(false);
+        }
+      }
+    };
+    checkShareParam();
+  }, []);
 
   useEffect(() => {
     loadConfig();
@@ -2283,6 +2597,127 @@ export default function App() {
     options: prev.options.map(o => o.id === id ? { ...o, content } : o),
   }));
 
+  // Share function (Entry Point 1: Link Share)
+  const handleShare = async (type: GameType) => {
+    const configToShare = type === 'wheel' ? config : pokeConfig;
+    if (configToShare.options.length === 0) {
+      Alert.alert('無法分享', '請先新增至少一個選項');
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      console.log('[Share] Creating share for:', configToShare.name);
+      const shareId = await createShare(
+        {
+          name: configToShare.name,
+          customGreeting: configToShare.customGreeting,
+          options: configToShare.options,
+          themeId: configToShare.themeId,
+        },
+        type
+      );
+      console.log('[Share] Share created with ID:', shareId);
+      const url = getShareUrl(shareId);
+      console.log('[Share] Share URL:', url);
+
+      // Try native share first
+      const shareMessage = `來玩玩看吧! ${configToShare.name}`;
+      try {
+        const shared = await shareContent({
+          message: shareMessage,
+          url: url,
+          title: 'LUCKY抽',
+        });
+        console.log('[Share] Native share result:', shared);
+
+        // If native share not available or cancelled, show modal as fallback
+        if (!shared) {
+          setShareUrl(url);
+          setShareModalVisible(true);
+        }
+      } catch (shareError) {
+        // Native share failed, show modal as fallback
+        console.log('[Share] Native share failed, showing modal:', shareError);
+        setShareUrl(url);
+        setShareModalVisible(true);
+      }
+    } catch (e: any) {
+      console.error('[Share] Failed to create share:', e);
+      console.error('[Share] Error details:', e?.message, e?.code);
+      Alert.alert('分享失敗', `無法建立分享連結：${e?.message || '請稍後再試'}`);
+    }
+    setIsSharing(false);
+  };
+
+  // Result share function (Entry Point 2: Result Image Share)
+  const handleShareResult = async (type: GameType, resultData: SpinResult) => {
+    const configToShare = type === 'wheel' ? config : pokeConfig;
+    if (configToShare.options.length === 0) {
+      Alert.alert('無法分享', '請先新增至少一個選項');
+      return;
+    }
+
+    setIsResultSharing(true);
+    try {
+      console.log('[ResultShare] Creating result share for:', configToShare.name);
+      // Create SharedResult from SpinResult
+      const sharedResult: SharedResult = {
+        optionId: resultData.option.id,
+        optionContent: resultData.option.content,
+        optionType: resultData.option.type,
+        optionLabel: resultData.option.label,
+        timestamp: Date.now(),
+      };
+
+      // Create share with result
+      const shareId = await createShareWithResult(
+        {
+          name: configToShare.name,
+          customGreeting: configToShare.customGreeting,
+          options: configToShare.options,
+          themeId: configToShare.themeId,
+        },
+        type,
+        sharedResult
+      );
+      console.log('[ResultShare] Share created with ID:', shareId);
+      const url = getShareUrl(shareId);
+      console.log('[ResultShare] Share URL:', url);
+
+      // Share message with result
+      const resultText = resultData.option.type === 'text'
+        ? resultData.option.content
+        : (resultData.option.label || '神秘獎品');
+      const shareMessage = `我在「${configToShare.name}」抽到了「${resultText}」！\n來玩玩看吧!`;
+
+      try {
+        const shared = await shareContent({
+          message: shareMessage,
+          url: url,
+          title: 'LUCKY抽 - 分享結果',
+        });
+        console.log('[ResultShare] Native share result:', shared);
+
+        // If native share not available, show modal as fallback
+        if (!shared) {
+          setShareUrl(url);
+          setShareModalVisible(true);
+        }
+      } catch (shareError) {
+        // Native share failed, show modal as fallback
+        console.log('[ResultShare] Native share failed, showing modal:', shareError);
+        setShareUrl(url);
+        setShareModalVisible(true);
+      }
+    } catch (e: any) {
+      console.error('[ResultShare] Failed to create result share:', e);
+      console.error('[ResultShare] Error details:', e?.message, e?.code);
+      Alert.alert('分享失敗', `無法建立分享連結：${e?.message || '請稍後再試'}`);
+    }
+    setIsResultSharing(false);
+  };
+
   const contextValue: AppContextType = {
     currentScreen,
     navigate,
@@ -2308,7 +2743,30 @@ export default function App() {
     setPokedCells,
     pokeResult,
     setPokeResult,
+    // Share
+    isSharing,
+    shareUrl,
+    shareModalVisible,
+    setShareModalVisible,
+    handleShare,
+    isSharedMode,
+    // Result sharing
+    isResultSharing,
+    handleShareResult,
+    sharedResultData,
   };
+
+  // Loading screen for shared content
+  if (isLoadingShare) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#8C1D18' }}>
+          <Text style={{ color: '#FAF6EE', fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>LUCKY抽</Text>
+          <Text style={{ color: '#FAF6EE', fontSize: 16 }}>載入中...</Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -2318,6 +2776,13 @@ export default function App() {
         {currentScreen === 'Spin' && <SpinScreen />}
         {currentScreen === 'PokeSetup' && <PokeSetupScreen />}
         {currentScreen === 'PokeGame' && <PokeGameScreen />}
+        {/* Share Modal */}
+        <ShareModal
+          visible={shareModalVisible}
+          shareUrl={shareUrl}
+          onClose={() => setShareModalVisible(false)}
+          theme={activeTheme}
+        />
       </AppContext.Provider>
     </SafeAreaProvider>
   );
