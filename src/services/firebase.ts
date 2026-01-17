@@ -1,15 +1,19 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import Constants from 'expo-constants';
+
+// Get Firebase config from environment variables via expo-constants
+const extra = Constants.expoConfig?.extra;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC8swhivZqpQ0vAYuJtele3C1pLTkJbRkg",
-  authDomain: "web-qman-roulette.firebaseapp.com",
-  projectId: "web-qman-roulette",
-  storageBucket: "web-qman-roulette.firebasestorage.app",
-  messagingSenderId: "886018247986",
-  appId: "1:886018247986:web:243b2c2505a0e3b2e4db2b",
-  measurementId: "G-LSBYXNPFHK"
+  apiKey: extra?.firebaseApiKey,
+  authDomain: extra?.firebaseAuthDomain,
+  projectId: extra?.firebaseProjectId,
+  storageBucket: extra?.firebaseStorageBucket,
+  messagingSenderId: extra?.firebaseMessagingSenderId,
+  appId: extra?.firebaseAppId,
+  measurementId: extra?.firebaseMeasurementId,
 };
 
 const app = initializeApp(firebaseConfig);
