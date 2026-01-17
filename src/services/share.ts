@@ -257,7 +257,8 @@ export async function createShareWithResult(
   }
 
   // Create Firestore document with result
-  const shareData: SharedConfig = {
+  // Note: Firestore doesn't accept undefined values, so we only include fields that have values
+  const shareData: Record<string, any> = {
     id: shareId,
     type,
     name: config.name,
@@ -266,8 +267,12 @@ export async function createShareWithResult(
     themeId: config.themeId,
     createdAt: Timestamp.now(),
     sharedResult: result,
-    previewImageUrl,
   };
+
+  // Only add previewImageUrl if it exists
+  if (previewImageUrl) {
+    shareData.previewImageUrl = previewImageUrl;
+  }
 
   await setDoc(doc(db, 'shares', shareId), shareData);
   return shareId;
