@@ -96,6 +96,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { createShare, createShareWithResult, loadShare, getShareUrl, SharedConfig, SharedResult, GameType } from './src/services/share';
 import { shareContent } from './src/services/nativeShare';
 import { captureRef } from 'react-native-view-shot';
+import * as Linking from 'expo-linking';
 
 // ============ TYPES ============
 type ScreenName = 'Home' | 'Setup' | 'Spin' | 'PokeSetup' | 'PokeGame';
@@ -2386,15 +2387,123 @@ export default function App() {
   const activeTheme = THEMES[config.themeId];
   const pokeTheme = THEMES[pokeConfig.themeId];
 
-  // Check for share URL parameter on mount
+  // Helper function to load shared config by ID
+  const loadSharedConfig = async (shareId: string) => {
+    setIsLoadingShare(true);
+    try {
+      console.log('[DeepLink] Loading share:', shareId);
+      const sharedConfig = await loadShare(shareId);
+      if (sharedConfig) {
+        setIsSharedMode(true);
+
+        // Check if this is a result share
+        if (sharedConfig.sharedResult) {
+          setSharedResultData(sharedConfig.sharedResult);
+        }
+
+        if (sharedConfig.type === 'wheel') {
+          setConfig({
+            id: sharedConfig.id,
+            name: sharedConfig.name,
+            customGreeting: sharedConfig.customGreeting,
+            options: sharedConfig.options,
+            themeId: sharedConfig.themeId,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+
+          // If result share, set result to show modal immediately
+          if (sharedConfig.sharedResult) {
+            const resultOption = sharedConfig.options.find(
+              o => o.id === sharedConfig.sharedResult?.optionId
+            ) || {
+              id: sharedConfig.sharedResult.optionId,
+              type: sharedConfig.sharedResult.optionType,
+              content: sharedConfig.sharedResult.optionContent,
+              label: sharedConfig.sharedResult.optionLabel,
+            };
+            setResult({
+              option: resultOption,
+              index: 0,
+            });
+          }
+          setCurrentScreen('Spin');
+        } else {
+          setPokeConfig({
+            id: sharedConfig.id,
+            name: sharedConfig.name,
+            customGreeting: sharedConfig.customGreeting,
+            options: sharedConfig.options,
+            themeId: sharedConfig.themeId,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+          setPokedCells([]);
+
+          // If result share, set result to show modal immediately
+          if (sharedConfig.sharedResult) {
+            const resultOption = sharedConfig.options.find(
+              o => o.id === sharedConfig.sharedResult?.optionId
+            ) || {
+              id: sharedConfig.sharedResult.optionId,
+              type: sharedConfig.sharedResult.optionType,
+              content: sharedConfig.sharedResult.optionContent,
+              label: sharedConfig.sharedResult.optionLabel,
+            };
+            setPokeResult({
+              option: resultOption,
+              index: 0,
+            });
+          }
+          setCurrentScreen('PokeGame');
+        }
+        console.log('[DeepLink] Share loaded successfully');
+      } else {
+        Alert.alert('載入失敗', '找不到分享的內容');
+      }
+    } catch (e) {
+      console.error('[DeepLink] Failed to load shared config:', e);
+      Alert.alert('載入失敗', '無法載入分享的內容');
+    }
+    setIsLoadingShare(false);
+  };
+
+  // Extract share ID from URL
+  const extractShareId = (url: string): string | null => {
+    try {
+      // Handle various URL formats:
+      // - https://qman-roulette-app.vercel.app/s/xxx
+      // - luckydraw://s/xxx
+      // - ?share=xxx
+      const urlObj = new URL(url);
+
+      // Check query parameter
+      const shareParam = urlObj.searchParams.get('share');
+      if (shareParam) return shareParam;
+
+      // Check path format /s/xxx
+      const pathMatch = urlObj.pathname.match(/\/s\/([a-zA-Z0-9]+)/);
+      if (pathMatch) return pathMatch[1];
+
+      return null;
+    } catch {
+      // Try simple regex match for custom scheme
+      const match = url.match(/\/s\/([a-zA-Z0-9]+)/);
+      return match ? match[1] : null;
+    }
+  };
+
+  // Check for share URL parameter on mount (Web + Mobile)
   useEffect(() => {
     const checkShareParam = async () => {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        // Check both ?share=xxx (from Vercel rewrite) and /s/xxx (direct path)
-        const params = new URLSearchParams(window.location.search);
-        let shareId = params.get('share');
+      let shareId: string | null = null;
 
-        // Also check path format /s/xxx (for local testing or direct access)
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        // Web: Check URL parameters
+        const params = new URLSearchParams(window.location.search);
+        shareId = params.get('share');
+
+        // Also check path format /s/xxx
         if (!shareId) {
           const pathMatch = window.location.pathname.match(/^\/s\/([a-zA-Z0-9]+)$/);
           if (pathMatch) {
@@ -2402,88 +2511,46 @@ export default function App() {
           }
         }
 
+        // Clear URL after extracting
         if (shareId) {
-          setIsLoadingShare(true);
-          try {
-            const sharedConfig = await loadShare(shareId);
-            if (sharedConfig) {
-              setIsSharedMode(true);
-
-              // Check if this is a result share
-              if (sharedConfig.sharedResult) {
-                setSharedResultData(sharedConfig.sharedResult);
-              }
-
-              if (sharedConfig.type === 'wheel') {
-                setConfig({
-                  id: sharedConfig.id,
-                  name: sharedConfig.name,
-                  customGreeting: sharedConfig.customGreeting,
-                  options: sharedConfig.options,
-                  themeId: sharedConfig.themeId,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                });
-
-                // If result share, set result to show modal immediately
-                if (sharedConfig.sharedResult) {
-                  const resultOption = sharedConfig.options.find(
-                    o => o.id === sharedConfig.sharedResult?.optionId
-                  ) || {
-                    id: sharedConfig.sharedResult.optionId,
-                    type: sharedConfig.sharedResult.optionType,
-                    content: sharedConfig.sharedResult.optionContent,
-                    label: sharedConfig.sharedResult.optionLabel,
-                  };
-                  setResult({
-                    option: resultOption,
-                    index: 0,
-                  });
-                }
-                setCurrentScreen('Spin');
-              } else {
-                setPokeConfig({
-                  id: sharedConfig.id,
-                  name: sharedConfig.name,
-                  customGreeting: sharedConfig.customGreeting,
-                  options: sharedConfig.options,
-                  themeId: sharedConfig.themeId,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                });
-                setPokedCells([]);
-
-                // If result share, set result to show modal immediately
-                if (sharedConfig.sharedResult) {
-                  const resultOption = sharedConfig.options.find(
-                    o => o.id === sharedConfig.sharedResult?.optionId
-                  ) || {
-                    id: sharedConfig.sharedResult.optionId,
-                    type: sharedConfig.sharedResult.optionType,
-                    content: sharedConfig.sharedResult.optionContent,
-                    label: sharedConfig.sharedResult.optionLabel,
-                  };
-                  setPokeResult({
-                    option: resultOption,
-                    index: 0,
-                  });
-                }
-                setCurrentScreen('PokeGame');
-              }
-              // Clear the URL parameter
-              window.history.replaceState({}, '', window.location.pathname);
-            } else {
-              Alert.alert('載入失敗', '找不到分享的內容');
-            }
-          } catch (e) {
-            console.error('Failed to load shared config:', e);
-            Alert.alert('載入失敗', '無法載入分享的內容');
+          window.history.replaceState({}, '', '/');
+        }
+      } else {
+        // Mobile: Check initial URL (Deep Link)
+        try {
+          const initialUrl = await Linking.getInitialURL();
+          console.log('[DeepLink] Initial URL:', initialUrl);
+          if (initialUrl) {
+            shareId = extractShareId(initialUrl);
           }
-          setIsLoadingShare(false);
+        } catch (e) {
+          console.error('[DeepLink] Error getting initial URL:', e);
         }
       }
+
+      if (shareId) {
+        await loadSharedConfig(shareId);
+      }
     };
+
     checkShareParam();
+  }, []);
+
+  // Listen for Deep Links while app is running (Mobile)
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const subscription = Linking.addEventListener('url', async (event) => {
+      console.log('[DeepLink] Received URL:', event.url);
+      const shareId = extractShareId(event.url);
+      if (shareId) {
+        await loadSharedConfig(shareId);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   useEffect(() => {

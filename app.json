@@ -15,13 +15,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cjhengdigital.luckydraw",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "允許存取相簿以匯入抽獎選項的照片",
         "NSPhotoLibraryAddUsageDescription": "允許儲存圖片至相簿",
         "CFBundleDisplayName": "LUCKY抽",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": ["applinks:qman-roulette-app.vercel.app"]
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +34,20 @@
       "package": "com.cjhengdigital.luckydraw",
       "permissions": [
         "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "qman-roulette-app.vercel.app",
+              "pathPrefix": "/s"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
@@ -43,6 +58,7 @@
       "shortName": "LUCKY抽",
       "description": "線上製作輪盤抽獎與戳戳樂遊戲"
     },
+    "scheme": "luckydraw",
     "plugins": [
       [
         "expo-image-picker",
